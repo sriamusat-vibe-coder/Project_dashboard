@@ -61,6 +61,7 @@ def parse_project_pdf(path: str) -> Optional[dict]:
         "project_id":     _val(kv, "Project ID"),
         "project_name":   _val(kv, "Project Name"),
         "client":         _val(kv, "Client Name"),
+        "country":        _val(kv, "Client Country", "Country"),
         "contract_value": _amount(_val(kv, "Contract Value (INR)", "Contract Value")),
         "start_date":     _val(kv, "Start Date"),
         "end_date":       _val(kv, "End Date"),
@@ -110,10 +111,36 @@ def parse_employee_pdf(path: str) -> Optional[dict]:
     text, kv = _read_pdf(path)
     if "Employee Directory" not in text and "EMPLOYEE DIRECTORY" not in text:
         return None
+    employees = []
+    try:
+        with pdfplumber.open(path) as pdf:
+            for page in pdf.pages:
+                for table in (page.extract_tables() or []):
+                    if not table or len(table) < 2 or len(table[0]) < 5:
+                        continue
+                    header = [str(c or '').strip().lower() for c in table[0]]
+                    if 'utilization' not in ' '.join(header):
+                        continue
+                    for row in table[1:]:
+                        if len(row) >= 6 and row[0]:
+                            name = str(row[0] or '').strip()
+                            if not name:
+                                continue
+                            employees.append({
+                                "name":           name,
+                                "department":     str(row[1] or '').strip(),
+                                "project":        str(row[2] or '').strip(),
+                                "allocated_hours": float(str(row[3] or '160').replace(',', '') or '160'),
+                                "worked_hours":    float(str(row[4] or '0').replace(',', '') or '0'),
+                                "utilization":     float(str(row[5] or '0').replace('%', '').strip() or '0'),
+                            })
+    except Exception as e:
+        print(f"  [parser] Employee table parse error: {e}")
     return {
         "type": "employee",
         "source_file": Path(path).name,
-        "total_employees": int(_amount(_val(kv, "Total Employees"))),
+        "total_employees": int(_amount(_val(kv, "Total Employees"))) or len(employees),
+        "employees": employees,
     }
 
 
@@ -200,6 +227,41 @@ def compute_metrics(data: dict) -> dict:
         for m in all_months
     ]
 
+    # Country map from projects
+    country_map = {p["project_id"]: p.get("country", "Unknown") for p in projects}
+
+    # Country-wise revenue (from paid invoices)
+    country_revenue: dict[str, float] = {}
+    for inv in invoices:
+        if inv["status"].lower() == "paid":
+            c = country_map.get(inv["project_id"], "Unknown")
+            country_revenue[c] = country_revenue.get(c, 0) + inv["amount"]
+    country_revenue_data = [{"country": c, "revenue": v} for c, v in sorted(country_revenue.items(), key=lambda x: -x[1])]
+
+    # Project-wise profitability
+    proj_revenue: dict[str, float] = {}
+    proj_expense: dict[str, float] = {}
+    for inv in invoices:
+        if inv["status"].lower() == "paid":
+            proj_revenue[inv["project_id"]] = proj_revenue.get(inv["project_id"], 0) + inv["amount"]
+    for exp in expenses:
+        proj_expense[exp["project_id"]] = proj_expense.get(exp["project_id"], 0) + exp["total"]
+    project_profitability = [
+        {
+            "project_id":   p["project_id"],
+            "project_name": p["project_name"],
+            "revenue":  proj_revenue.get(p["project_id"], 0),
+            "expense":  proj_expense.get(p["project_id"], 0),
+            "profit":   proj_revenue.get(p["project_id"], 0) - proj_expense.get(p["project_id"], 0),
+        }
+        for p in projects
+    ]
+
+    # Employee utilization
+    employee_list = []
+    for e in employees:
+        employee_list.extend(e.get("employees", []))
+
     return {
         "total_projects":      total_projects,
         "active_projects":     active_projects,
@@ -214,6 +276,9 @@ def compute_metrics(data: dict) -> dict:
         "net_cash_position":   net_cash_position,
         "employee_count":      employee_count,
         "monthly_data":        monthly_data,
+        "country_revenue":     country_revenue_data,
+        "project_profitability": project_profitability,
+        "employee_utilization":  employee_list,
         "projects":  projects,
         "invoices":  invoices,
         "expenses":  expenses,

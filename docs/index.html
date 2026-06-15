@@ -320,11 +320,37 @@
     <!-- Analytics Section -->
     <div class="section-panel" id="section-analytics" style="display:none">
       <div class="section-title">📊 Analytics</div>
+
+      <!-- Row 1: Revenue vs Expense + Outstanding Collection -->
       <div class="chart-grid">
         <div class="chart-card">
-          <h3>Monthly Revenue vs Expenses</h3>
+          <h3>Revenue vs Expenses (Monthly)</h3>
           <div class="chart-wrap" style="height:260px">
             <canvas id="chart-monthly"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <h3>Outstanding Collection Status</h3>
+          <div class="chart-wrap" style="height:260px">
+            <canvas id="chart-collection"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2: Monthly Cash Flow -->
+      <div class="chart-card" style="margin-top:16px">
+        <h3>Monthly Cash Flow</h3>
+        <div class="chart-wrap" style="height:220px">
+          <canvas id="chart-cashflow"></canvas>
+        </div>
+      </div>
+
+      <!-- Row 3: Country-wise Revenue + Project Status -->
+      <div class="chart-grid" style="margin-top:16px">
+        <div class="chart-card">
+          <h3>Country-wise Revenue</h3>
+          <div class="chart-wrap" style="height:260px">
+            <canvas id="chart-country"></canvas>
           </div>
         </div>
         <div class="chart-card">
@@ -334,10 +360,20 @@
           </div>
         </div>
       </div>
+
+      <!-- Row 4: Project-wise Profitability -->
       <div class="chart-card" style="margin-top:16px">
-        <h3>Net Cash Flow by Month</h3>
-        <div class="chart-wrap" style="height:220px">
-          <canvas id="chart-cashflow"></canvas>
+        <h3>Project-wise Profitability</h3>
+        <div class="chart-wrap" style="height:260px">
+          <canvas id="chart-profitability"></canvas>
+        </div>
+      </div>
+
+      <!-- Row 5: Employee Utilization -->
+      <div class="chart-card" style="margin-top:16px">
+        <h3>Employee Utilization</h3>
+        <div class="chart-wrap" style="height:420px">
+          <canvas id="chart-utilization"></canvas>
         </div>
       </div>
     </div>
@@ -387,8 +423,9 @@
 <script>
 // ── Global state ──────────────────────────────────────────────────────────────
 let _rawProjects = [], _rawInvoices = [], _rawExpenses = [], _employeeCount = 0;
+let _countryRevenue = [], _projectProfitability = [], _employeeUtilization = [];
 let _activePid = null;
-let chartMonthly, chartStatus, chartCash;
+let chartMonthly, chartStatus, chartCash, chartCollection, chartCountry, chartProfit, chartUtil;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const INR = v => '₹' + Number(v).toLocaleString('en-IN');
@@ -440,10 +477,11 @@ function buildMonthlyData(invoices, expenses) {
 function buildCharts(projects, invoices, expenses) {
   const md=buildMonthlyData(invoices,expenses);
   const labels=md.map(m=>m.month),revenue=md.map(m=>m.revenue),expense=md.map(m=>m.expense),net=md.map(m=>m.net);
-  if(chartMonthly)chartMonthly.destroy();
-  if(chartStatus) chartStatus.destroy();
-  if(chartCash)   chartCash.destroy();
 
+  [chartMonthly,chartStatus,chartCash,chartCollection,chartCountry,chartProfit,chartUtil]
+    .forEach(c=>{ if(c) c.destroy(); });
+
+  // 1. Revenue vs Expenses (bar)
   chartMonthly=new Chart(el('chart-monthly'),{
     type:'bar',
     data:{labels,datasets:[
@@ -455,6 +493,42 @@ function buildCharts(projects, invoices, expenses) {
       scales:{y:{ticks:{callback:v=>'₹'+Number(v).toLocaleString('en-IN')}}}}
   });
 
+  // 2. Outstanding Collection Status (doughnut)
+  const paid=invoices.filter(i=>i.status.toLowerCase()==='paid').reduce((s,i)=>s+i.amount,0);
+  const outstanding=invoices.filter(i=>i.status.toLowerCase()!=='paid').reduce((s,i)=>s+i.amount,0);
+  chartCollection=new Chart(el('chart-collection'),{
+    type:'doughnut',
+    data:{labels:['Collected','Outstanding'],
+      datasets:[{data:[paid,outstanding],backgroundColor:['#38a169','#e53e3e'],hoverOffset:6,borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:c=>` ${c.label}: ₹${c.raw.toLocaleString('en-IN')}`}}},cutout:'62%'}
+  });
+
+  // 3. Monthly Cash Flow (line)
+  chartCash=new Chart(el('chart-cashflow'),{
+    type:'line',
+    data:{labels,datasets:[{label:'Net Cash Flow',data:net,
+      borderColor:'#805ad5',backgroundColor:'rgba(128,90,213,.12)',
+      fill:true,tension:.35,pointRadius:5,pointBackgroundColor:'#805ad5'}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' ₹'+c.raw.toLocaleString('en-IN')}}},
+      scales:{y:{ticks:{callback:v=>'₹'+Number(v).toLocaleString('en-IN')}}}}
+  });
+
+  // 4. Country-wise Revenue (horizontal bar) — use global data (not filterable by project)
+  const cr=_countryRevenue;
+  chartCountry=new Chart(el('chart-country'),{
+    type:'bar',
+    data:{labels:cr.map(c=>c.country),datasets:[{
+      label:'Revenue',data:cr.map(c=>c.revenue),
+      backgroundColor:['#3182ce','#38a169','#d69e2e','#805ad5','#e53e3e'],borderRadius:4
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' ₹'+c.raw.toLocaleString('en-IN')}}},
+      scales:{x:{ticks:{callback:v=>'₹'+Number(v).toLocaleString('en-IN')}}}}
+  });
+
+  // 5. Project Status (doughnut)
   const active=projects.filter(p=>p.status.toLowerCase()==='active').length;
   const completed=projects.filter(p=>p.status.toLowerCase()==='completed').length;
   const onhold=projects.filter(p=>p.status.toLowerCase().includes('hold')).length;
@@ -466,14 +540,36 @@ function buildCharts(projects, invoices, expenses) {
       plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:c=>` ${c.label}: ${c.raw}`}}},cutout:'62%'}
   });
 
-  chartCash=new Chart(el('chart-cashflow'),{
-    type:'line',
-    data:{labels,datasets:[{label:'Net Cash Flow',data:net,
-      borderColor:'#805ad5',backgroundColor:'rgba(128,90,213,.12)',
-      fill:true,tension:.35,pointRadius:5,pointBackgroundColor:'#805ad5'}]},
+  // 6. Project-wise Profitability (grouped bar) — filter by active project if needed
+  const pp = _activePid
+    ? _projectProfitability.filter(p=>p.project_id===_activePid)
+    : _projectProfitability;
+  const shortName = n => n.length>16 ? n.slice(0,14)+'…' : n;
+  chartProfit=new Chart(el('chart-profitability'),{
+    type:'bar',
+    data:{labels:pp.map(p=>shortName(p.project_name)),datasets:[
+      {label:'Revenue', data:pp.map(p=>p.revenue), backgroundColor:'rgba(56,161,105,.75)',borderRadius:4},
+      {label:'Expenses',data:pp.map(p=>p.expense), backgroundColor:'rgba(229,62,62,.65)', borderRadius:4},
+      {label:'Profit',  data:pp.map(p=>p.profit),  backgroundColor:'rgba(49,130,206,.75)', borderRadius:4},
+    ]},
     options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' ₹'+c.raw.toLocaleString('en-IN')}}},
+      plugins:{legend:{position:'top'},tooltip:{callbacks:{label:c=>' ₹'+c.raw.toLocaleString('en-IN')}}},
       scales:{y:{ticks:{callback:v=>'₹'+Number(v).toLocaleString('en-IN')}}}}
+  });
+
+  // 7. Employee Utilization (horizontal bar) — use global data
+  const eu=_employeeUtilization;
+  const utilColors=eu.map(e=>e.utilization>=90?'rgba(56,161,105,.8)':e.utilization>=75?'rgba(214,158,46,.8)':'rgba(229,62,62,.8)');
+  chartUtil=new Chart(el('chart-utilization'),{
+    type:'bar',
+    data:{labels:eu.map(e=>e.name),datasets:[{
+      label:'Utilization %',data:eu.map(e=>e.utilization),
+      backgroundColor:utilColors,borderRadius:4
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.raw}%  (${eu[c.dataIndex]?.department})`}}},
+      scales:{x:{min:0,max:100,ticks:{callback:v=>v+'%'}},
+              y:{ticks:{font:{size:11}}}}}
   });
 }
 
@@ -689,11 +785,14 @@ async function loadData(){
     if(!json.success) throw new Error(json.error||'Unknown error');
 
     const d=json.data;
-    _rawProjects   =d.projects      ||[];
-    _rawInvoices   =d.invoices      ||[];
-    _rawExpenses   =d.expenses      ||[];
-    _employeeCount =d.employee_count||0;
-    _activePid     =null;
+    _rawProjects           = d.projects             || [];
+    _rawInvoices           = d.invoices             || [];
+    _rawExpenses           = d.expenses             || [];
+    _employeeCount         = d.employee_count       || 0;
+    _countryRevenue        = d.country_revenue      || [];
+    _projectProfitability  = d.project_profitability|| [];
+    _employeeUtilization   = d.employee_utilization || [];
+    _activePid             = null;
 
     el('pdf-folder').textContent   ='📁 '+(json.pdf_folder||'pdfs/');
     el('last-updated').textContent ='Updated: '+new Date().toLocaleTimeString();

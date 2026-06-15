@@ -43,11 +43,11 @@ def _kv(data):
 # ── PROJECTS ─────────────────────────────────────────────────────────────────
 
 PROJECTS = [
-    dict(id='PRJ-001', name='E-Commerce Platform',     client='ABC Corporation',  value=500000,  start='01-Jan-2025', end='30-Jun-2025', status='Active',    mgr='Sathish Srinivasan'),
-    dict(id='PRJ-002', name='Mobile Banking App',      client='XYZ Bank',         value=750000,  start='15-Jan-2025', end='31-Dec-2025', status='Active',    mgr='Sathish Srinivasan'),
-    dict(id='PRJ-003', name='HR Management System',    client='DEF Limited',      value=300000,  start='01-Nov-2024', end='31-Dec-2024', status='Completed', mgr='Sathish Srinivasan'),
-    dict(id='PRJ-004', name='Supply Chain Solution',   client='GHI Industries',   value=450000,  start='01-Mar-2025', end='31-Aug-2025', status='On Hold',   mgr='Sathish Srinivasan'),
-    dict(id='PRJ-005', name='CRM Implementation',      client='JKL Corporation',  value=250000,  start='01-Jan-2025', end='28-Feb-2025', status='Completed', mgr='Sathish Srinivasan'),
+    dict(id='PRJ-001', name='E-Commerce Platform',   client='ABC Corporation', country='India',     value=500000, start='01-Jan-2025', end='30-Jun-2025', status='Active',    mgr='Sathish Srinivasan'),
+    dict(id='PRJ-002', name='Mobile Banking App',    client='XYZ Bank',        country='Singapore', value=750000, start='15-Jan-2025', end='31-Dec-2025', status='Active',    mgr='Sathish Srinivasan'),
+    dict(id='PRJ-003', name='HR Management System',  client='DEF Limited',     country='India',     value=300000, start='01-Nov-2024', end='31-Dec-2024', status='Completed', mgr='Sathish Srinivasan'),
+    dict(id='PRJ-004', name='Supply Chain Solution', client='GHI Industries',  country='UAE',       value=450000, start='01-Mar-2025', end='31-Aug-2025', status='On Hold',   mgr='Sathish Srinivasan'),
+    dict(id='PRJ-005', name='CRM Implementation',    client='JKL Corporation', country='USA',       value=250000, start='01-Jan-2025', end='28-Feb-2025', status='Completed', mgr='Sathish Srinivasan'),
 ]
 
 def create_project(p):
@@ -62,6 +62,7 @@ def create_project(p):
             ['Project ID',           p['id']],
             ['Project Name',         p['name']],
             ['Client Name',          p['client']],
+            ['Client Country',       p['country']],
             ['Contract Value (INR)', f"Rs. {p['value']:,}"],
             ['Start Date',           p['start']],
             ['End Date',             p['end']],
@@ -191,6 +192,27 @@ def create_expense(exp):
 
 # ── EMPLOYEE DIRECTORY ───────────────────────────────────────────────────────
 
+EMPLOYEES = [
+    dict(name='Arjun Sharma',       dept='Software Development', project='PRJ-001', allocated=160, worked=152, util=95.0),
+    dict(name='Priya Mehta',        dept='Software Development', project='PRJ-001', allocated=160, worked=148, util=92.5),
+    dict(name='Rahul Gupta',        dept='Software Development', project='PRJ-002', allocated=160, worked=160, util=100.0),
+    dict(name='Anita Roy',          dept='Software Development', project='PRJ-002', allocated=160, worked=155, util=96.9),
+    dict(name='Vijay Kumar',        dept='Software Development', project='PRJ-002', allocated=160, worked=140, util=87.5),
+    dict(name='Sneha Iyer',         dept='Software Development', project='PRJ-003', allocated=160, worked=160, util=100.0),
+    dict(name='Kiran Reddy',        dept='Software Development', project='PRJ-004', allocated=160, worked=120, util=75.0),
+    dict(name='Pooja Nair',         dept='Software Development', project='PRJ-005', allocated=160, worked=150, util=93.8),
+    dict(name='Amit Singh',         dept='Quality Assurance',    project='PRJ-001', allocated=160, worked=144, util=90.0),
+    dict(name='Divya Patel',        dept='Quality Assurance',    project='PRJ-002', allocated=160, worked=152, util=95.0),
+    dict(name='Suresh Rao',         dept='Quality Assurance',    project='PRJ-003', allocated=160, worked=135, util=84.4),
+    dict(name='Meena Krishnan',     dept='Business Analysis',    project='PRJ-002', allocated=160, worked=160, util=100.0),
+    dict(name='Ravi Shankar',       dept='Business Analysis',    project='PRJ-004', allocated=160, worked=100, util=62.5),
+    dict(name='Lakshmi Devi',       dept='UI/UX Design',         project='PRJ-001', allocated=160, worked=155, util=96.9),
+    dict(name='Ganesh Murthy',      dept='UI/UX Design',         project='PRJ-002', allocated=160, worked=148, util=92.5),
+    dict(name='Sathish Srinivasan', dept='Project Management',   project='PRJ-001', allocated=160, worked=160, util=100.0),
+    dict(name='Nandini Bhat',       dept='Project Management',   project='PRJ-003', allocated=160, worked=155, util=96.9),
+    dict(name='Chandrika Swamy',    dept='Administration',       project='Internal', allocated=160, worked=145, util=90.6),
+]
+
 def create_employees():
     doc = _doc('Employee_Directory.pdf')
     story = [
@@ -200,35 +222,26 @@ def create_employees():
         Spacer(1, 6*mm),
         _kv([
             ['Document Type',   'Employee Directory'],
-            ['Total Employees', '18'],
+            ['Total Employees', str(len(EMPLOYEES))],
             ['Report Date',     '15-Jun-2025'],
         ]),
         Spacer(1, 5*mm),
-        Paragraph('Department Breakdown:', HEADER_STYLE),
+        Paragraph('Employee Utilization:', HEADER_STYLE),
     ]
-    rows = [
-        ['Department',          'Head Count'],
-        ['Software Development','8'],
-        ['Quality Assurance',   '3'],
-        ['Business Analysis',   '2'],
-        ['UI/UX Design',        '2'],
-        ['Project Management',  '2'],
-        ['Administration',      '1'],
-        ['TOTAL',               '18'],
-    ]
-    t = Table(rows, colWidths=(110*mm, 60*mm))
+    rows = [['Employee Name', 'Department', 'Project', 'Allocated Hrs', 'Worked Hrs', 'Utilization %']]
+    for e in EMPLOYEES:
+        rows.append([e['name'], e['dept'], e['project'], str(e['allocated']), str(e['worked']), f"{e['util']}%"])
+    t = Table(rows, colWidths=(42*mm, 38*mm, 22*mm, 22*mm, 22*mm, 24*mm))
     t.setStyle(TableStyle([
         ('BACKGROUND',    (0,0),  (-1,0),  colors.HexColor('#805ad5')),
         ('TEXTCOLOR',     (0,0),  (-1,0),  colors.white),
         ('FONTNAME',      (0,0),  (-1,0),  'Helvetica-Bold'),
-        ('FONTNAME',      (0,1),  (-1,-2), 'Helvetica'),
-        ('FONTNAME',      (0,-1), (-1,-1), 'Helvetica-Bold'),
-        ('FONTSIZE',      (0,0),  (-1,-1), 9),
+        ('FONTNAME',      (0,1),  (-1,-1), 'Helvetica'),
+        ('FONTSIZE',      (0,0),  (-1,-1), 8),
         ('GRID',          (0,0),  (-1,-1), 0.5, colors.HexColor('#cbd5e0')),
-        ('BACKGROUND',    (0,-1), (-1,-1), colors.HexColor('#faf5ff')),
-        ('ROWBACKGROUNDS',(0,1),  (-1,-2), [colors.white, colors.HexColor('#f5f0ff')]),
-        ('PADDING',       (0,0),  (-1,-1), 6),
-        ('ALIGN',         (1,0),  (1,-1),  'CENTER'),
+        ('ROWBACKGROUNDS',(0,1),  (-1,-1), [colors.white, colors.HexColor('#f5f0ff')]),
+        ('PADDING',       (0,0),  (-1,-1), 5),
+        ('ALIGN',         (3,0),  (-1,-1), 'CENTER'),
     ]))
     story.append(t)
     doc.build(story)
