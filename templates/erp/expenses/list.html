@@ -1,0 +1,79 @@
+{% extends "erp/base.html" %}
+{% block title %}Expenses – BIM Bytes ERP{% endblock %}
+{% block page_title %}Expenses{% endblock %}
+{% block page_sub %}Track and approve operational expenses{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="d-flex gap-2 flex-wrap">
+    {% for s in ['All','Pending','Manager Approved','Finance Approved','Rejected'] %}
+    <a href="?status={{ s if s!='All' else '' }}" class="btn btn-sm {% if (request.args.get('status',''))==(s if s!='All' else '') %}btn-brand{% else %}btn-outline-secondary{% endif %}" style="font-size:11px">{{ s }}</a>
+    {% endfor %}
+  </div>
+  <a href="/expenses/new" class="btn btn-brand btn-sm"><i class="bi bi-plus-lg me-1"></i>Submit Expense</a>
+</div>
+
+<!-- Summary cards -->
+<div class="row g-3 mb-4">
+  {% set pending = expenses | selectattr('status','equalto','Pending') | list %}
+  {% set approved = expenses | selectattr('status','equalto','Finance Approved') | list %}
+  <div class="col-md-3"><div class="kpi-card kpi-dark" style="padding:16px">
+    <div class="kpi-val" style="font-size:18px">{{ inr(expenses | sum(attribute='amount')) }}</div>
+    <div class="kpi-label">Total Submitted</div>
+  </div></div>
+  <div class="col-md-3"><div class="kpi-card kpi-orange" style="padding:16px">
+    <div class="kpi-val" style="font-size:18px">{{ pending|length }}</div>
+    <div class="kpi-label">Pending Approval</div>
+  </div></div>
+  <div class="col-md-3"><div class="kpi-card kpi-green" style="padding:16px">
+    <div class="kpi-val" style="font-size:18px">{{ inr(approved | sum(attribute='amount')) }}</div>
+    <div class="kpi-label">Finance Approved</div>
+  </div></div>
+  <div class="col-md-3"><div class="kpi-card kpi-blue" style="padding:16px">
+    <div class="kpi-val" style="font-size:18px">{{ expenses | selectattr('status','equalto','Manager Approved') | list | length }}</div>
+    <div class="kpi-label">Awaiting Finance</div>
+  </div></div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-custom mb-0">
+      <thead><tr>
+        <th class="ps-3">Date</th><th>Employee</th><th>Category</th>
+        <th>Project</th><th>Description</th><th>Amount</th><th>Status</th><th></th>
+      </tr></thead>
+      <tbody>
+      {% for exp in expenses %}
+      {% set esc={'Pending':'pending','Manager Approved':'partial','Finance Approved':'completed','Rejected':'overdue'} %}
+      <tr>
+        <td class="ps-3" style="font-size:12px">{{ exp.expense_date | fmt_date }}</td>
+        <td style="font-size:12px;font-weight:600">{{ exp.employee.name if exp.employee else '—' }}</td>
+        <td>
+          <div style="font-size:11px;background:#f7fafc;border:1px solid #e2e8f0;color:#4a5568;padding:2px 8px;border-radius:4px;display:inline-block">{{ exp.category }}</div>
+          {% if exp.sub_category %}<div style="font-size:10px;color:#a0aec0;margin-top:2px">{{ exp.sub_category }}</div>{% endif %}
+        </td>
+        <td style="font-size:11px;color:#718096">{{ exp.project.name[:22] if exp.project else '—' }}</td>
+        <td style="font-size:11px;color:#4a5568;max-width:160px">{{ exp.description[:50] if exp.description else '—' }}</td>
+        <td style="font-size:13px;font-weight:700;color:#2d3748">{{ inr(exp.amount) }}</td>
+        <td><span class="badge-status badge-{{ esc.get(exp.status,'pending') }}">{{ exp.status }}</span></td>
+        <td>
+          {% if current_user.can('admin','director','finance','project_manager') and exp.status in ['Pending','Manager Approved'] %}
+          <form method="POST" action="/expenses/{{ exp.id }}/approve" class="d-inline">
+            <select name="action" class="form-select form-select-sm d-inline w-auto" onchange="this.form.submit()" style="font-size:11px">
+              <option value="">Action…</option>
+              {% if exp.status == 'Pending' and current_user.can('admin','director','project_manager') %}<option value="manager_approve">Manager Approve</option>{% endif %}
+              {% if exp.status == 'Manager Approved' and current_user.can('admin','director','finance') %}<option value="finance_approve">Finance Approve</option>{% endif %}
+              <option value="reject">Reject</option>
+            </select>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="text-center py-5 text-muted">No expenses found.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

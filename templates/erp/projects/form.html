@@ -1,0 +1,133 @@
+{% extends "erp/base.html" %}
+{% block title %}{{ 'Edit' if project else 'New' }} Project – BIM Bytes ERP{% endblock %}
+{% block page_title %}{{ 'Edit Project' if project else 'New Project' }}{% endblock %}
+{% block page_sub %}{{ project.name if project else 'Create a new BIM project' }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-xl-9">
+<div class="card">
+<div class="card-body">
+<form method="POST">
+
+<div class="section-divider">Project Information</div>
+<div class="row g-3">
+  <div class="col-md-4">
+    <label class="form-label">Project ID *</label>
+    <input name="project_id" class="form-control" required value="{{ project.project_id if project else 'PRJ-00' }}" placeholder="PRJ-008">
+  </div>
+  <div class="col-md-8">
+    <label class="form-label">Project Name *</label>
+    <input name="name" class="form-control" required value="{{ project.name if project else '' }}" placeholder="e.g. High-Rise Office Tower BIM Coordination">
+  </div>
+  <div class="col-md-6">
+    <label class="form-label">Client</label>
+    <select name="client_id" class="form-select">
+      <option value="">— Select Client —</option>
+      {% for c in clients %}
+      <option value="{{ c.id }}" {% if project and project.client_id==c.id %}selected{% endif %}>{{ c.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-6">
+    <label class="form-label">Status *</label>
+    <select name="status" class="form-select" required>
+      {% for s in ['Lead','Awarded','Ongoing','On Hold','Completed','Cancelled'] %}
+      <option {% if project and project.status==s %}selected{% elif not project and s=='Ongoing' %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-6">
+    <label class="form-label">Project Type</label>
+    <select name="project_type" class="form-select">
+      <option value="">— Select —</option>
+      {% for t in ['BIM Modeling','BIM Coordination','LOD Development','Clash Detection','As-Built Documentation','BIM Consulting','BIM Management','Infrastructure BIM','MEP BIM','Structural BIM'] %}
+      <option {% if project and project.project_type==t %}selected{% endif %}>{{ t }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-6">
+    <label class="form-label">Software / Tools</label>
+    <input name="software" class="form-control" value="{{ project.software if project else '' }}" placeholder="Revit, Navisworks, AutoCAD">
+  </div>
+</div>
+
+<div class="section-divider mt-4">Financials & Schedule</div>
+<div class="row g-3">
+  <div class="col-md-4">
+    <label class="form-label">Contract Value (₹)</label>
+    <input name="contract_value" type="number" step="0.01" class="form-control" value="{{ project.contract_value if project else '' }}" placeholder="5000000">
+  </div>
+  <div class="col-md-4">
+    <label class="form-label">Currency</label>
+    <select name="currency" class="form-select">
+      {% for cur in ['INR','USD','AED','SGD','GBP','EUR'] %}
+      <option {% if project and project.currency==cur %}selected{% elif not project and cur=='INR' %}selected{% endif %}>{{ cur }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-4">
+    <label class="form-label">Country</label>
+    <input name="country" class="form-control" value="{{ project.country if project else 'India' }}" placeholder="India">
+  </div>
+  <div class="col-md-4">
+    <label class="form-label">Start Date</label>
+    <input name="start_date" type="date" class="form-control" value="{{ project.start_date.strftime('%Y-%m-%d') if project and project.start_date else '' }}">
+  </div>
+  <div class="col-md-4">
+    <label class="form-label">End Date</label>
+    <input name="end_date" type="date" class="form-control" value="{{ project.end_date.strftime('%Y-%m-%d') if project and project.end_date else '' }}">
+  </div>
+  <div class="col-md-4">
+    <label class="form-label">Project Manager</label>
+    <select name="project_manager_id" class="form-select">
+      <option value="">— Select PM —</option>
+      {% for e in employees %}
+      <option value="{{ e.id }}" {% if project and project.project_manager_id==e.id %}selected{% endif %}>{{ e.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</div>
+
+<div class="section-divider mt-4">BIM Details</div>
+<div class="row g-3">
+  <div class="col-md-4">
+    <label class="form-label">LOD (Level of Detail)</label>
+    <select name="lod_level" class="form-select">
+      <option value="">— Select —</option>
+      {% for l in ['LOD 100','LOD 200','LOD 300','LOD 350','LOD 400','LOD 500'] %}
+      <option {% if project and project.lod_level==l %}selected{% endif %}>{{ l }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-4">
+    <label class="form-label">BIM Standard</label>
+    <input name="bim_standard" class="form-control" value="{{ project.bim_standard if project else '' }}" placeholder="ISO 19650, BS 1192">
+  </div>
+  <div class="col-md-4">
+    <label class="form-label">Number of Buildings</label>
+    <input name="num_buildings" type="number" class="form-control" value="{{ project.num_buildings if project else '' }}" placeholder="1">
+  </div>
+  <div class="col-12">
+    <label class="form-label">Description / Scope of Work</label>
+    <textarea name="description" class="form-control" rows="3" placeholder="Project scope, deliverables, special requirements...">{{ project.description if project else '' }}</textarea>
+  </div>
+</div>
+
+<div class="d-flex gap-2 mt-4">
+  <button type="submit" class="btn btn-brand"><i class="bi bi-check2 me-1"></i>{{ 'Update Project' if project else 'Create Project' }}</button>
+  <a href="{{ '/projects/'+project.id|string if project else '/projects' }}" class="btn btn-outline-secondary">Cancel</a>
+</div>
+</form>
+</div>
+</div>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.section-divider{font-size:11px;font-weight:700;color:#8B1A1A;text-transform:uppercase;
+  letter-spacing:.6px;padding-bottom:8px;border-bottom:2px solid #fff5f5;margin-bottom:4px}
+</style>
+{% endblock %}

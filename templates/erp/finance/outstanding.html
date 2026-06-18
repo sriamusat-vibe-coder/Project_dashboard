@@ -1,0 +1,63 @@
+{% extends "erp/base.html" %}
+{% block title %}Outstanding Report – BIM Bytes ERP{% endblock %}
+{% block page_title %}Outstanding Report{% endblock %}
+{% block page_sub %}Unpaid and overdue invoices{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+  {% set total_out = invoices | sum(attribute='outstanding') %}
+  {% set overdue = invoices | selectattr('is_overdue') | list %}
+  <div class="col-md-4"><div class="kpi-card kpi-red" style="padding:16px">
+    <div class="kpi-val" style="font-size:22px">{{ inr(total_out) }}</div>
+    <div class="kpi-label">Total Outstanding</div>
+  </div></div>
+  <div class="col-md-4"><div class="kpi-card kpi-orange" style="padding:16px">
+    <div class="kpi-val" style="font-size:22px">{{ overdue|length }}</div>
+    <div class="kpi-label">Overdue Invoices</div>
+  </div></div>
+  <div class="col-md-4"><div class="kpi-card kpi-dark" style="padding:16px">
+    <div class="kpi-val" style="font-size:22px">{{ invoices|length }}</div>
+    <div class="kpi-label">Pending Invoices</div>
+  </div></div>
+</div>
+
+<div class="card">
+  <div class="card-header"><i class="bi bi-exclamation-triangle text-danger me-1"></i>Pending / Overdue Invoices</div>
+  <div class="card-body p-0">
+    <table class="table table-custom mb-0">
+      <thead><tr>
+        <th class="ps-3">Invoice #</th><th>Client</th><th>Project</th>
+        <th>Invoice Date</th><th>Due Date</th><th>Total</th><th>Outstanding</th><th>Age (Days)</th><th>Status</th>
+      </tr></thead>
+      <tbody>
+      {% for inv in invoices | sort(attribute='due_date') %}
+      <tr onclick="location.href='/finance/invoices/{{ inv.id }}'" style="cursor:pointer{% if inv.is_overdue %};background:#fff5f5{% endif %}">
+        <td class="ps-3"><code style="font-size:11px">{{ inv.invoice_number }}</code></td>
+        <td style="font-size:12px;font-weight:600">{{ inv.client.name if inv.client else '—' }}</td>
+        <td style="font-size:11px;color:#718096">{{ inv.project.name[:25] if inv.project else '—' }}</td>
+        <td style="font-size:11px">{{ inv.invoice_date | fmt_date }}</td>
+        <td style="font-size:11px{% if inv.is_overdue %};color:#c53030;font-weight:700{% endif %}">{{ inv.due_date | fmt_date }}</td>
+        <td style="font-size:12px">{{ inr(inv.total_amount) }}</td>
+        <td style="font-size:13px;font-weight:700;color:#c53030">{{ inr(inv.outstanding) }}</td>
+        <td>
+          {% if inv.due_date %}
+          {% set age = (today_dt - inv.due_date).days if inv.is_overdue else 0 %}
+          <span style="font-size:11px;{% if age > 60 %}color:#c53030;font-weight:700{% elif age > 30 %}color:#c05621;font-weight:600{% else %}color:#718096{% endif %}">
+            {% if age > 0 %}{{ age }} days{% else %}—{% endif %}
+          </span>
+          {% endif %}
+        </td>
+        <td>{% set sc={'Paid':'paid','Pending':'pending','Overdue':'overdue','Partially Paid':'partial'} %}
+          <span class="badge-status badge-{{ sc.get(inv.status,'pending') }}">{{ inv.status }}</span></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="9" class="text-center py-5">
+        <i class="bi bi-check2-circle" style="font-size:32px;color:#276749"></i>
+        <p class="mt-2 text-muted">All invoices are paid!</p>
+      </td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

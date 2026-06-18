@@ -1,0 +1,76 @@
+{% extends "erp/base.html" %}
+{% block title %}Timesheets – BIM Bytes ERP{% endblock %}
+{% block page_title %}Timesheets{% endblock %}
+{% block page_sub %}Time tracking and approval{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="d-flex gap-2">
+    {% for s in ['All','Draft','Submitted','Approved'] %}
+    <a href="?status={{ s if s!='All' else '' }}" class="btn btn-sm {% if (request.args.get('status',''))==(s if s!='All' else '') %}btn-brand{% else %}btn-outline-secondary{% endif %}" style="font-size:11px">{{ s }}</a>
+    {% endfor %}
+  </div>
+  <a href="/timesheets/new" class="btn btn-brand btn-sm"><i class="bi bi-plus-lg me-1"></i>Log Hours</a>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+  {% set total_hrs = timesheets | sum(attribute='hours') %}
+  {% set approved_hrs = timesheets | selectattr('status','equalto','Approved') | sum(attribute='hours') %}
+  <div class="col-md-3"><div class="kpi-card kpi-dark" style="padding:14px">
+    <div class="kpi-val" style="font-size:20px">{{ total_hrs }}</div>
+    <div class="kpi-label">Total Hours Logged</div>
+  </div></div>
+  <div class="col-md-3"><div class="kpi-card kpi-green" style="padding:14px">
+    <div class="kpi-val" style="font-size:20px">{{ approved_hrs }}</div>
+    <div class="kpi-label">Approved Hours</div>
+  </div></div>
+  <div class="col-md-3"><div class="kpi-card kpi-orange" style="padding:14px">
+    <div class="kpi-val" style="font-size:20px">{{ timesheets | selectattr('status','equalto','Submitted') | list | length }}</div>
+    <div class="kpi-label">Pending Approval</div>
+  </div></div>
+  <div class="col-md-3"><div class="kpi-card kpi-blue" style="padding:14px">
+    <div class="kpi-val" style="font-size:20px">{{ timesheets | map(attribute='employee_id') | unique | list | length }}</div>
+    <div class="kpi-label">Employees Logged</div>
+  </div></div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-custom mb-0">
+      <thead><tr>
+        <th class="ps-3">Date</th><th>Employee</th><th>Project</th>
+        <th>Hours</th><th>OT Hours</th><th>Task</th><th>Status</th><th></th>
+      </tr></thead>
+      <tbody>
+      {% for ts in timesheets %}
+      {% set tsc={'Approved':'completed','Submitted':'partial','Draft':'pending'} %}
+      <tr>
+        <td class="ps-3" style="font-size:12px">{{ ts.work_date | fmt_date }}</td>
+        <td>
+          <div style="font-size:12px;font-weight:600">{{ ts.employee.name if ts.employee else '—' }}</div>
+          <div style="font-size:10px;color:#718096">{{ ts.employee.job_title if ts.employee else '' }}</div>
+        </td>
+        <td style="font-size:11px;color:#718096">{{ ts.project.name[:25] if ts.project else '—' }}</td>
+        <td style="font-size:14px;font-weight:700;color:#2d3748">{{ ts.hours }}h</td>
+        <td style="font-size:12px;color:#718096">{{ ts.overtime_hours ~ 'h' if ts.overtime_hours else '—' }}</td>
+        <td style="font-size:11px;color:#4a5568;max-width:180px">{{ ts.task_description[:50] if ts.task_description else '—' }}</td>
+        <td><span class="badge-status badge-{{ tsc.get(ts.status,'pending') }}">{{ ts.status }}</span></td>
+        <td>
+          {% if ts.status in ['Draft','Submitted'] and current_user.can('admin','director','bim_manager','project_manager') %}
+          <form method="POST" action="/timesheets/{{ ts.id }}/approve">
+            <button type="submit" class="btn btn-sm" style="background:#f0fff4;color:#276749;border:1px solid #c6f6d5;font-size:11px;padding:2px 8px">
+              <i class="bi bi-check2"></i> Approve
+            </button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="text-center py-5 text-muted">No timesheets found.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

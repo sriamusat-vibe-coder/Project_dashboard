@@ -1,0 +1,21 @@
+{% extends "erp/base.html" %}
+{% block title %}Access Denied – BIM Bytes ERP{% endblock %}
+{% block page_title %}Access Denied{% endblock %}
+{% block page_sub %}You don't have permission to view this page{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-md-6">
+<div class="card text-center" style="padding:48px">
+  <div style="font-size:80px;color:#fecaca;line-height:1">403</div>
+  <i class="bi bi-shield-lock" style="font-size:48px;color:#c53030;margin:16px 0"></i>
+  <h4 style="color:#1a202c;font-weight:700">Access Restricted</h4>
+  <p style="color:#718096;font-size:13px">Your role (<strong>{{ current_user.role | replace('_',' ') | title }}</strong>) does not have permission to access this section.</p>
+  <div class="d-flex gap-2 justify-content-center mt-4">
+    <a href="/" class="btn btn-brand"><i class="bi bi-house me-1"></i>Dashboard</a>
+    <a href="javascript:history.back()" class="btn btn-outline-secondary">Go Back</a>
+  </div>
+</div>
+</div>
+</div>
+{% endblock %}

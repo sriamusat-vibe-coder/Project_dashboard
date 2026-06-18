@@ -1,0 +1,177 @@
+{% extends "erp/base.html" %}
+{% block title %}{{ invoice.invoice_number }} – BIM Bytes ERP{% endblock %}
+{% block page_title %}{{ invoice.invoice_number }}{% endblock %}
+{% block page_sub %}{{ invoice.client.name if invoice.client else '' }} · {{ invoice.invoice_date | fmt_date }}{% endblock %}
+
+{% block content %}
+{% set sc={'Paid':'paid','Pending':'pending','Overdue':'overdue','Partially Paid':'partial'} %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <span class="badge-status badge-{{ sc.get(invoice.status,'pending') }}" style="font-size:14px">
+    {{ invoice.status }}{% if invoice.is_overdue %} ⚠ OVERDUE{% endif %}
+  </span>
+  <button onclick="window.print()" class="btn btn-outline-secondary btn-sm"><i class="bi bi-printer me-1"></i>Print</button>
+</div>
+
+<div class="row g-3">
+<div class="col-md-8">
+
+  <!-- Invoice Card (printable) -->
+  <div class="card mb-3" id="printable">
+    <div class="card-body" style="padding:32px">
+      <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+          <div style="font-size:22px;font-weight:800;color:#8B1A1A;letter-spacing:-1px">INVOICE</div>
+          <div style="font-size:13px;color:#718096">{{ invoice.invoice_number }}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-weight:700;color:#1a202c">BIM Bytes Solutions</div>
+          <div style="font-size:11px;color:#718096">A Complete Digital Construction Design Partner</div>
+        </div>
+      </div>
+
+      <div class="row mb-4">
+        <div class="col-6">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#8B1A1A;margin-bottom:6px">Bill To</div>
+          <div style="font-weight:700;font-size:13px">{{ invoice.client.name if invoice.client else '—' }}</div>
+          {% if invoice.client and invoice.client.contact_person %}
+          <div style="font-size:11px;color:#718096">{{ invoice.client.contact_person }}</div>
+          {% endif %}
+          {% if invoice.client and invoice.client.email %}
+          <div style="font-size:11px;color:#718096">{{ invoice.client.email }}</div>
+          {% endif %}
+        </div>
+        <div class="col-6 text-end">
+          <table style="width:100%;font-size:11px">
+            <tr><td style="color:#718096;padding:2px 0">Invoice Date</td><td style="font-weight:600">{{ invoice.invoice_date | fmt_date }}</td></tr>
+            <tr><td style="color:#718096;padding:2px 0">Due Date</td><td style="font-weight:600{% if invoice.is_overdue %};color:#c53030{% endif %}">{{ invoice.due_date | fmt_date }}</td></tr>
+            {% if invoice.payment_terms %}
+            <tr><td style="color:#718096;padding:2px 0">Terms</td><td style="font-weight:600">{{ invoice.payment_terms }}</td></tr>
+            {% endif %}
+          </table>
+        </div>
+      </div>
+
+      <!-- Project reference -->
+      {% if invoice.project %}
+      <div style="background:#f7fafc;border-radius:8px;padding:12px;margin-bottom:20px;font-size:12px">
+        <span style="color:#718096">Project: </span><strong>{{ invoice.project.name }}</strong>
+        <span class="ms-3" style="color:#718096">ID: </span><code>{{ invoice.project.project_id }}</code>
+      </div>
+      {% endif %}
+
+      <!-- Amount table -->
+      <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
+        <thead>
+          <tr style="background:#1C1C1C;color:#fff">
+            <th style="padding:10px 12px;text-align:left;font-size:11px">Description</th>
+            <th style="padding:10px 12px;text-align:right;font-size:11px">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid #f0f0f0">
+            <td style="padding:12px;font-size:12px">BIM Services – {{ invoice.project.name if invoice.project else 'Professional Services' }}</td>
+            <td style="padding:12px;text-align:right;font-size:12px;font-weight:600">₹{{ '{:,.2f}'.format(invoice.subtotal or invoice.total_amount) }}</td>
+          </tr>
+          {% if invoice.tax_amount %}
+          <tr style="border-bottom:1px solid #f0f0f0">
+            <td style="padding:12px;font-size:12px;color:#718096">GST / Tax</td>
+            <td style="padding:12px;text-align:right;font-size:12px">₹{{ '{:,.2f}'.format(invoice.tax_amount) }}</td>
+          </tr>
+          {% endif %}
+          {% if invoice.discount %}
+          <tr style="border-bottom:1px solid #f0f0f0">
+            <td style="padding:12px;font-size:12px;color:#718096">Discount</td>
+            <td style="padding:12px;text-align:right;font-size:12px;color:#276749">-₹{{ '{:,.2f}'.format(invoice.discount) }}</td>
+          </tr>
+          {% endif %}
+          <tr style="background:#fff5f5">
+            <td style="padding:12px;font-weight:800;color:#8B1A1A">TOTAL</td>
+            <td style="padding:12px;text-align:right;font-weight:800;font-size:18px;color:#8B1A1A">{{ inr(invoice.total_amount) }}</td>
+          </tr>
+          {% if invoice.amount_paid %}
+          <tr>
+            <td style="padding:8px 12px;font-size:12px;color:#276749">Amount Paid</td>
+            <td style="padding:8px 12px;text-align:right;font-size:12px;color:#276749">-{{ inr(invoice.amount_paid) }}</td>
+          </tr>
+          <tr style="background:#fff8f8">
+            <td style="padding:8px 12px;font-weight:700">Balance Due</td>
+            <td style="padding:8px 12px;text-align:right;font-weight:700;color:#c53030">{{ inr(invoice.outstanding) }}</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+
+      {% if invoice.notes %}
+      <div style="font-size:11px;color:#718096;border-top:1px solid #f0f0f0;padding-top:12px">
+        <strong>Notes:</strong> {{ invoice.notes }}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Payment history -->
+  {% if invoice.payments %}
+  <div class="card">
+    <div class="card-header"><i class="bi bi-check2-all text-danger me-1"></i>Payment History</div>
+    <div class="card-body p-0">
+      <table class="table table-custom mb-0">
+        <thead><tr><th class="ps-3">Date</th><th>Method</th><th>Reference</th><th>Amount</th></tr></thead>
+        <tbody>
+        {% for pay in invoice.payments %}
+        <tr>
+          <td class="ps-3" style="font-size:12px">{{ pay.payment_date | fmt_date }}</td>
+          <td style="font-size:12px">{{ pay.payment_method or '—' }}</td>
+          <td style="font-size:11px;color:#718096">{{ pay.reference or '—' }}</td>
+          <td style="font-size:12px;font-weight:700;color:#276749">{{ inr(pay.amount) }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<div class="col-md-4">
+
+  <!-- Record Payment -->
+  {% if current_user.can('admin','director','finance') and invoice.outstanding > 0 %}
+  <div class="card mb-3">
+    <div class="card-header"><i class="bi bi-cash text-danger me-1"></i>Record Payment</div>
+    <div class="card-body">
+      <form method="POST">
+        <div class="mb-3"><label class="form-label" style="font-size:12px">Amount (₹)</label>
+          <input name="amount" type="number" step="0.01" class="form-control" required placeholder="{{ invoice.outstanding }}"></div>
+        <div class="mb-3"><label class="form-label" style="font-size:12px">Payment Date</label>
+          <input name="payment_date" type="date" class="form-control" required value="{{ today }}"></div>
+        <div class="mb-3"><label class="form-label" style="font-size:12px">Method</label>
+          <select name="payment_method" class="form-select">
+            {% for m in ['Bank Transfer','Cheque','Online','Cash','UPI'] %}<option>{{ m }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="mb-3"><label class="form-label" style="font-size:12px">Reference / UTR</label>
+          <input name="reference" class="form-control" placeholder="TXN reference"></div>
+        <button type="submit" class="btn btn-brand w-100"><i class="bi bi-check2 me-1"></i>Record Payment</button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Summary -->
+  <div class="card">
+    <div class="card-header"><i class="bi bi-info-circle text-danger me-1"></i>Summary</div>
+    <div class="card-body" style="font-size:12px">
+      {% macro row(l,v,cls='') %}<div class="d-flex justify-content-between py-1 border-bottom">
+        <span style="color:#718096">{{ l }}</span><span class="fw-bold {{ cls }}">{{ v }}</span></div>{% endmacro %}
+      {{ row('Invoice Total', inr(invoice.total_amount)) }}
+      {{ row('Amount Paid', inr(invoice.amount_paid or 0), 'text-success') }}
+      {{ row('Outstanding', inr(invoice.outstanding), 'text-danger' if invoice.outstanding > 0 else '') }}
+      {{ row('Currency', invoice.currency or 'INR') }}
+      {{ row('Payment Terms', invoice.payment_terms or '—') }}
+    </div>
+  </div>
+
+</div>
+</div>
+{% endblock %}

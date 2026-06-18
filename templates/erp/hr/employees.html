@@ -1,0 +1,81 @@
+{% extends "erp/base.html" %}
+{% block title %}Employees – BIM Bytes ERP{% endblock %}
+{% block page_title %}Employees{% endblock %}
+{% block page_sub %}Team directory and HR management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="d-flex gap-2 flex-wrap">
+    {% set depts = employees | map(attribute='department') | unique | list %}
+    <a href="?" class="btn btn-sm {% if not request.args.get('dept') %}btn-brand{% else %}btn-outline-secondary{% endif %}" style="font-size:11px">All</a>
+    {% for d in depts if d %}
+    <a href="?dept={{ d }}" class="btn btn-sm {% if request.args.get('dept')==d %}btn-brand{% else %}btn-outline-secondary{% endif %}" style="font-size:11px">{{ d }}</a>
+    {% endfor %}
+  </div>
+  {% if current_user.can('admin','hr','director') %}
+  <a href="/hr/employees/new" class="btn btn-brand btn-sm"><i class="bi bi-plus-lg me-1"></i>Add Employee</a>
+  {% endif %}
+</div>
+
+<div class="row g-3">
+{% for e in employees %}
+<div class="col-md-6 col-xl-4">
+  <div class="card h-100" onclick="location.href='/hr/employees/{{ e.id }}'" style="cursor:pointer;transition:box-shadow .2s" onmouseenter="this.style.boxShadow='0 8px 24px rgba(0,0,0,.1)'" onmouseleave="this.style.boxShadow=''">
+    <div class="card-body">
+      <div class="d-flex align-items-center mb-3" style="gap:14px">
+        <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#8B1A1A,#c53030);color:#fff;
+          display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;flex-shrink:0">
+          {{ e.name[0] }}
+        </div>
+        <div>
+          <div style="font-weight:700;font-size:14px;color:#1a202c">{{ e.name }}</div>
+          <div style="font-size:11px;color:#8B1A1A;font-weight:600">{{ e.job_title or '—' }}</div>
+          <div style="font-size:10px;color:#718096"><code>{{ e.employee_id }}</code></div>
+        </div>
+        <div class="ms-auto">
+          {% if e.status == 'Active' %}
+          <span style="width:8px;height:8px;border-radius:50%;background:#276749;display:inline-block" title="Active"></span>
+          {% else %}
+          <span style="width:8px;height:8px;border-radius:50%;background:#718096;display:inline-block" title="Inactive"></span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div style="font-size:11px;color:#4a5568;margin-bottom:8px">
+        <i class="bi bi-building me-1 text-muted"></i>{{ e.department or '—' }}
+        {% if e.email %}&nbsp;·&nbsp;<i class="bi bi-envelope me-1 text-muted"></i>{{ e.email }}{% endif %}
+      </div>
+
+      <div class="row g-0 text-center" style="background:#f7fafc;border-radius:8px;padding:8px 0">
+        <div class="col-4">
+          <div style="font-size:12px;font-weight:700;color:#2d3748">{{ inr(e.salary) if e.salary else '—' }}</div>
+          <div style="font-size:10px;color:#718096">Salary</div>
+        </div>
+        <div class="col-4" style="border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0">
+          <div style="font-size:12px;font-weight:700;color:#2b6cb0">{{ e.hourly_rate or '—' }}</div>
+          <div style="font-size:10px;color:#718096">₹/hr</div>
+        </div>
+        <div class="col-4">
+          <div style="font-size:12px;font-weight:700;color:#553c9a">{{ e.projects.count() if e.projects else '—' }}</div>
+          <div style="font-size:10px;color:#718096">Projects</div>
+        </div>
+      </div>
+
+      {% if e.skills %}
+      <div class="mt-2 d-flex flex-wrap gap-1">
+        {% for sk in e.skills.split(',')[:4] %}
+        <span style="font-size:9px;background:#f0f0f0;color:#4a5568;padding:2px 6px;border-radius:3px">{{ sk.strip() }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="col-12"><div class="card"><div class="card-body text-center py-5">
+  <i class="bi bi-people" style="font-size:48px;color:#e2e8f0"></i>
+  <p class="mt-3 text-muted">No employees found. <a href="/hr/employees/new">Add first employee</a></p>
+</div></div></div>
+{% endfor %}
+</div>
+{% endblock %}

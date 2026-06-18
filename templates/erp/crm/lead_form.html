@@ -1,0 +1,73 @@
+{% extends "erp/base.html" %}
+{% block title %}New Lead – BIM Bytes ERP{% endblock %}
+{% block page_title %}New Lead{% endblock %}
+{% block page_sub %}Add to sales pipeline{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-xl-7">
+<div class="card">
+<div class="card-body">
+<form method="POST">
+<div class="row g-3">
+  <div class="col-md-12">
+    <label class="form-label">Lead Title *</label>
+    <input name="title" class="form-control" required placeholder="e.g. Residential Complex BIM Coordination – Pune">
+  </div>
+  <div class="col-md-6">
+    <label class="form-label">Client</label>
+    <select name="client_id" class="form-select">
+      <option value="">— New / Unknown Client —</option>
+      {% for c in clients %}
+      <option value="{{ c.id }}">{{ c.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-6">
+    <label class="form-label">Client Name (if new)</label>
+    <input name="client_name" class="form-control" placeholder="Company name">
+  </div>
+  <div class="col-md-4">
+    <label class="form-label">Estimated Value (₹)</label>
+    <input name="estimated_value" type="number" step="0.01" class="form-control" placeholder="2500000">
+  </div>
+  <div class="col-md-4">
+    <label class="form-label">Probability (%)</label>
+    <input name="probability" type="number" min="0" max="100" class="form-control" placeholder="60">
+  </div>
+  <div class="col-md-4">
+    <label class="form-label">Stage</label>
+    <select name="stage" class="form-select">
+      {% for s in ['New Lead','Qualified','Proposal Submitted','Negotiation','Won','Lost'] %}
+      <option>{{ s }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-6">
+    <label class="form-label">Assigned To</label>
+    <select name="assigned_to" class="form-select">
+      <option value="">— Select PM/BIM Manager —</option>
+      {% for e in employees %}
+      <option value="{{ e.id }}">{{ e.name }} – {{ e.job_title }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-6">
+    <label class="form-label">Expected Close Date</label>
+    <input name="expected_close_date" type="date" class="form-control">
+  </div>
+  <div class="col-12">
+    <label class="form-label">Description / Notes</label>
+    <textarea name="description" class="form-control" rows="3" placeholder="Project scope, requirements, source of lead..."></textarea>
+  </div>
+</div>
+<div class="d-flex gap-2 mt-4">
+  <button type="submit" class="btn btn-brand"><i class="bi bi-plus-lg me-1"></i>Add Lead</button>
+  <a href="/crm/leads" class="btn btn-outline-secondary">Cancel</a>
+</div>
+</form>
+</div>
+</div>
+</div>
+</div>
+{% endblock %}

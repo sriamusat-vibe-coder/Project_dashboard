@@ -1,0 +1,173 @@
+{% extends "erp/base.html" %}
+{% block title %}Reports – BIM Bytes ERP{% endblock %}
+{% block page_title %}Analytics & Reports{% endblock %}
+{% block page_sub %}Business intelligence and performance metrics{% endblock %}
+
+{% block content %}
+<!-- Summary KPIs -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-red" style="padding:16px">
+    <div class="kpi-val" style="font-size:20px">{{ inr(total_contract) }}</div>
+    <div class="kpi-label">Total Contract Value</div>
+  </div></div>
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-green" style="padding:16px">
+    <div class="kpi-val" style="font-size:20px">{{ inr(total_received) }}</div>
+    <div class="kpi-label">Revenue Collected</div>
+  </div></div>
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-blue" style="padding:16px">
+    <div class="kpi-val" style="font-size:20px">{{ inr(total_profit) }}</div>
+    <div class="kpi-label">Net Profit</div>
+  </div></div>
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-teal" style="padding:16px">
+    <div class="kpi-val" style="font-size:20px">{{ '%d%%'|format(profit_margin|int) }}</div>
+    <div class="kpi-label">Profit Margin</div>
+  </div></div>
+</div>
+
+<div class="row g-3 mb-3">
+
+  <!-- Department expense breakdown -->
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-pie-chart text-danger me-1"></i>Expense by Category</div>
+      <div class="card-body p-0">
+        <table class="table table-custom mb-0">
+          <thead><tr><th class="ps-3">Category</th><th>Amount</th><th>Share</th></tr></thead>
+          <tbody>
+          {% for cat, amt in expense_by_cat %}
+          <tr>
+            <td class="ps-3" style="font-size:12px;font-weight:600">{{ cat }}</td>
+            <td style="font-size:12px">{{ inr(amt) }}</td>
+            <td style="font-size:12px;width:120px">
+              {% set pct = (amt / total_expenses * 100) if total_expenses else 0 %}
+              <div style="display:flex;align-items:center;gap:6px">
+                <div style="flex:1;height:5px;background:#e2e8f0;border-radius:3px">
+                  <div style="width:{{ pct|int }}%;height:100%;background:#8B1A1A;border-radius:3px"></div>
+                </div>
+                <span style="font-size:10px;color:#718096">{{ '%d%%'|format(pct|int) }}</span>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Project profitability table -->
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-graph-up text-danger me-1"></i>Project Profitability</div>
+      <div class="card-body p-0">
+        <table class="table table-custom mb-0">
+          <thead><tr><th class="ps-3">Project</th><th>Revenue</th><th>Expense</th><th>Profit</th></tr></thead>
+          <tbody>
+          {% for p in projects %}
+          <tr onclick="location.href='/projects/{{ p.id }}'" style="cursor:pointer">
+            <td class="ps-3" style="font-size:11px;font-weight:600;max-width:130px">{{ p.name[:28] }}</td>
+            <td style="font-size:11px">{{ inr(p.total_received) }}</td>
+            <td style="font-size:11px;color:#c53030">{{ inr(p.total_expenses) }}</td>
+            <td style="font-size:11px;font-weight:700;color:{% if p.profit >= 0 %}#276749{% else %}#c53030{% endif %}">{{ inr(p.profit) }}</td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="row g-3 mb-3">
+
+  <!-- Revenue by country -->
+  <div class="col-md-5">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-globe text-danger me-1"></i>Revenue by Country</div>
+      <div class="card-body p-0">
+        <table class="table table-custom mb-0">
+          <thead><tr><th class="ps-3">Country</th><th>Projects</th><th>Revenue</th></tr></thead>
+          <tbody>
+          {% for row in revenue_by_country %}
+          <tr>
+            <td class="ps-3" style="font-size:12px;font-weight:600"><i class="bi bi-geo-alt me-1 text-muted"></i>{{ row.country }}</td>
+            <td style="font-size:12px">{{ row.count }}</td>
+            <td style="font-size:12px;font-weight:700">{{ inr(row.total) }}</td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Employee utilization -->
+  <div class="col-md-7">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-people text-danger me-1"></i>Employee Utilization (Hours)</div>
+      <div class="card-body p-0">
+        <table class="table table-custom mb-0">
+          <thead><tr><th class="ps-3">Employee</th><th>Role</th><th>Hours Logged</th><th>Approved</th></tr></thead>
+          <tbody>
+          {% for row in emp_utilization %}
+          <tr onclick="location.href='/hr/employees/{{ row.emp.id }}'" style="cursor:pointer">
+            <td class="ps-3" style="font-size:12px;font-weight:600">{{ row.emp.name }}</td>
+            <td style="font-size:11px;color:#718096">{{ row.emp.job_title }}</td>
+            <td style="font-size:12px">{{ row.total_hours }}h</td>
+            <td style="font-size:12px;color:#276749">{{ row.approved_hours }}h</td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- HR Summary -->
+{% if current_user.can('admin','hr','director') %}
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-bar-chart text-danger me-1"></i>Leave Summary by Type</div>
+      <div class="card-body p-0">
+        <table class="table table-custom mb-0">
+          <thead><tr><th class="ps-3">Leave Type</th><th>Approved</th><th>Pending</th><th>Total Days</th></tr></thead>
+          <tbody>
+          {% for row in leave_summary %}
+          <tr>
+            <td class="ps-3" style="font-size:12px">{{ row.type }}</td>
+            <td style="font-size:12px;color:#276749">{{ row.approved }}</td>
+            <td style="font-size:12px;color:#c05621">{{ row.pending }}</td>
+            <td style="font-size:12px;font-weight:700">{{ row.total_days }}</td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-building text-danger me-1"></i>Department Headcount</div>
+      <div class="card-body p-0">
+        <table class="table table-custom mb-0">
+          <thead><tr><th class="ps-3">Department</th><th>Active</th><th>Total</th></tr></thead>
+          <tbody>
+          {% for row in dept_headcount %}
+          <tr>
+            <td class="ps-3" style="font-size:12px">{{ row.dept }}</td>
+            <td style="font-size:12px;color:#276749">{{ row.active }}</td>
+            <td style="font-size:12px;font-weight:700">{{ row.total }}</td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

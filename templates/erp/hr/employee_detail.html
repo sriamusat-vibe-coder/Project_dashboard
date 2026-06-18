@@ -1,0 +1,147 @@
+{% extends "erp/base.html" %}
+{% block title %}{{ employee.name }} – BIM Bytes ERP{% endblock %}
+{% block page_title %}{{ employee.name }}{% endblock %}
+{% block page_sub %}{{ employee.job_title }} · {{ employee.department }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-end mb-3">
+  {% if current_user.can('admin','hr') %}
+  <a href="/hr/employees/{{ employee.id }}/edit" class="btn btn-brand-outline btn-sm"><i class="bi bi-pencil me-1"></i>Edit</a>
+  {% endif %}
+</div>
+
+<div class="row g-3">
+<div class="col-md-4">
+
+  <!-- Profile card -->
+  <div class="card mb-3">
+    <div class="card-body text-center" style="padding:28px">
+      <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#8B1A1A,#c53030);color:#fff;
+        display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;margin:0 auto 16px">
+        {{ employee.name[0] }}
+      </div>
+      <div style="font-weight:800;font-size:18px;color:#1a202c">{{ employee.name }}</div>
+      <div style="font-size:12px;color:#8B1A1A;font-weight:600;margin:2px 0">{{ employee.job_title }}</div>
+      <div style="font-size:11px;color:#718096;margin-bottom:14px">{{ employee.department }}</div>
+      <code style="font-size:11px;background:#f7fafc;padding:3px 8px;border-radius:4px">{{ employee.employee_id }}</code>
+      <div class="mt-2">
+        <span style="font-size:11px;{% if employee.status=='Active' %}background:#f0fff4;color:#276749{% else %}background:#f7f7f7;color:#718096{% endif %};padding:3px 10px;border-radius:10px;font-weight:600">{{ employee.status }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contact -->
+  <div class="card mb-3">
+    <div class="card-header"><i class="bi bi-person-lines-fill text-danger me-1"></i>Contact</div>
+    <div class="card-body" style="font-size:12px">
+      {% if employee.email %}<div class="mb-2"><i class="bi bi-envelope me-2 text-muted"></i>{{ employee.email }}</div>{% endif %}
+      {% if employee.phone %}<div class="mb-2"><i class="bi bi-telephone me-2 text-muted"></i>{{ employee.phone }}</div>{% endif %}
+      {% if employee.address %}<div><i class="bi bi-geo-alt me-2 text-muted"></i>{{ employee.address }}</div>{% endif %}
+    </div>
+  </div>
+
+  <!-- HR Details -->
+  <div class="card">
+    <div class="card-header"><i class="bi bi-briefcase text-danger me-1"></i>HR Details</div>
+    <div class="card-body" style="font-size:12px">
+      {% macro row(l,v) %}{% if v %}<div class="d-flex justify-content-between py-1 border-bottom"><span style="color:#718096">{{ l }}</span><span style="font-weight:600">{{ v }}</span></div>{% endif %}{% endmacro %}
+      {{ row('Joined', employee.date_of_joining | fmt_date if employee.date_of_joining else '') }}
+      {{ row('Employment', employee.employment_type) }}
+      {{ row('Salary', inr(employee.salary) if employee.salary else '') }}
+      {{ row('Hourly Rate', '₹' ~ employee.hourly_rate ~ '/hr' if employee.hourly_rate else '') }}
+      {{ row('Leave Balance', employee.leave_balance|string ~ ' days' if employee.leave_balance is not none else '') }}
+      {{ row('Manager', employee.manager.name if employee.manager else '') }}
+    </div>
+  </div>
+
+</div>
+
+<div class="col-md-8">
+
+  <!-- Skills -->
+  {% if employee.skills %}
+  <div class="card mb-3">
+    <div class="card-header"><i class="bi bi-tools text-danger me-1"></i>Skills</div>
+    <div class="card-body d-flex flex-wrap gap-2">
+      {% for sk in employee.skills.split(',') %}
+      <span style="background:#fff5f5;color:#8B1A1A;border:1px solid #fecaca;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600">{{ sk.strip() }}</span>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Current Projects -->
+  <div class="card mb-3">
+    <div class="card-header"><i class="bi bi-folder2-open text-danger me-1"></i>Active Projects</div>
+    <div class="card-body p-0">
+      <table class="table table-custom mb-0">
+        <thead><tr><th class="ps-3">Project</th><th>Role</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for pt in employee.project_assignments %}
+        {% if pt.project.status in ['Ongoing','Awarded'] %}
+        <tr onclick="location.href='/projects/{{ pt.project.id }}'" style="cursor:pointer">
+          <td class="ps-3" style="font-size:12px;font-weight:600">{{ pt.project.name }}</td>
+          <td style="font-size:11px;color:#718096">{{ pt.role_in_project or '—' }}</td>
+          <td>{% set sc={'Ongoing':'ongoing','Awarded':'awarded'} %}<span class="badge-status badge-{{ sc.get(pt.project.status,'ongoing') }}">{{ pt.project.status }}</span></td>
+        </tr>
+        {% endif %}
+        {% else %}
+        <tr><td colspan="3" class="text-center text-muted py-3" style="font-size:12px">No active projects</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recent Timesheets -->
+  <div class="card mb-3">
+    <div class="card-header d-flex justify-content-between">
+      <span><i class="bi bi-clock text-danger me-1"></i>Recent Timesheets</span>
+      <a href="/timesheets/new?employee_id={{ employee.id }}" class="btn btn-sm btn-brand-outline" style="font-size:11px">Log Hours</a>
+    </div>
+    <div class="card-body p-0">
+      <table class="table table-custom mb-0">
+        <thead><tr><th class="ps-3">Date</th><th>Project</th><th>Hours</th><th>Task</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for ts in employee.timesheets | sort(attribute='work_date',reverse=True) | list %}{% if loop.index <= 8 %}
+        <tr>
+          <td class="ps-3" style="font-size:12px">{{ ts.work_date | fmt_date }}</td>
+          <td style="font-size:11px;color:#718096">{{ ts.project.name[:25] if ts.project else '—' }}</td>
+          <td style="font-size:12px;font-weight:700">{{ ts.hours }}h</td>
+          <td style="font-size:11px;color:#4a5568">{{ ts.task_description[:35] if ts.task_description else '—' }}</td>
+          <td>{% set tsc={'Approved':'completed','Submitted':'partial','Draft':'pending'} %}
+            <span class="badge-status badge-{{ tsc.get(ts.status,'pending') }}">{{ ts.status }}</span></td>
+        </tr>
+        {% endif %}{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Leaves -->
+  <div class="card">
+    <div class="card-header"><i class="bi bi-calendar2-check text-danger me-1"></i>Leave History</div>
+    <div class="card-body p-0">
+      <table class="table table-custom mb-0">
+        <thead><tr><th class="ps-3">Type</th><th>From</th><th>To</th><th>Days</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for lv in employee.leaves %}
+        <tr>
+          <td class="ps-3" style="font-size:12px">{{ lv.leave_type }}</td>
+          <td style="font-size:12px">{{ lv.start_date | fmt_date }}</td>
+          <td style="font-size:12px">{{ lv.end_date | fmt_date }}</td>
+          <td style="font-size:12px;font-weight:700">{{ lv.days_requested }}</td>
+          <td>{% set lsc={'Approved':'completed','Pending':'pending','Rejected':'overdue'} %}
+            <span class="badge-status badge-{{ lsc.get(lv.status,'pending') }}">{{ lv.status }}</span></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-3" style="font-size:12px">No leave history</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "erp/base.html" %}
+{% block title %}Lead Pipeline – BIM Bytes ERP{% endblock %}
+{% block page_title %}Lead Pipeline{% endblock %}
+{% block page_sub %}Track and nurture potential projects{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="d-flex gap-2 flex-wrap">
+    {% for s in ['All','New Lead','Qualified','Proposal Submitted','Negotiation','Won','Lost'] %}
+    <a href="?stage={{ s if s!='All' else '' }}" class="btn btn-sm {% if (request.args.get('stage',''))==(s if s!='All' else '') %}btn-brand{% else %}btn-outline-secondary{% endif %}" style="font-size:11px">{{ s }}</a>
+    {% endfor %}
+  </div>
+  {% if current_user.can('admin','director','bim_manager','project_manager') %}
+  <a href="/crm/leads/new" class="btn btn-brand btn-sm"><i class="bi bi-plus-lg me-1"></i>New Lead</a>
+  {% endif %}
+</div>
+
+<!-- Kanban-style pipeline summary -->
+<div class="row g-2 mb-4">
+  {% set stage_info = [
+    ('New Lead','#718096','bi-inbox'),('Qualified','#2b6cb0','bi-check-circle'),
+    ('Proposal Submitted','#553c9a','bi-file-text'),('Negotiation','#c05621','bi-arrow-left-right'),
+    ('Won','#276749','bi-trophy'),('Lost','#c53030','bi-x-circle')
+  ] %}
+  {% for stage, color, icon in stage_info %}
+  {% set count = leads | selectattr('stage','equalto',stage) | list | length %}
+  <div class="col">
+    <div style="background:{{ color }}12;border:1.5px solid {{ color }}30;border-radius:10px;padding:12px;text-align:center">
+      <i class="bi {{ icon }}" style="color:{{ color }};font-size:18px"></i>
+      <div style="font-size:18px;font-weight:700;color:{{ color }};margin:4px 0">{{ count }}</div>
+      <div style="font-size:10px;color:#718096;font-weight:600">{{ stage }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-custom mb-0">
+      <thead><tr>
+        <th class="ps-3">Lead</th><th>Client</th><th>Value</th>
+        <th>Probability</th><th>Stage</th><th>PM</th><th>Updated</th><th></th>
+      </tr></thead>
+      <tbody>
+      {% for l in leads %}
+      {% set stage_colors={'New Lead':'#718096','Qualified':'#2b6cb0','Proposal Submitted':'#553c9a','Negotiation':'#c05621','Won':'#276749','Lost':'#c53030'} %}
+      <tr>
+        <td class="ps-3">
+          <div style="font-weight:600;font-size:12px;color:#1a202c">{{ l.title }}</div>
+          {% if l.description %}<div style="font-size:10px;color:#718096">{{ l.description[:60] }}</div>{% endif %}
+        </td>
+        <td style="font-size:12px;color:#4a5568">{{ l.client.name if l.client else l.client_name or '—' }}</td>
+        <td style="font-size:12px;font-weight:700;color:#2d3748">{{ inr(l.estimated_value) if l.estimated_value else '—' }}</td>
+        <td>
+          {% if l.probability %}
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="flex:1;height:5px;background:#e2e8f0;border-radius:3px;max-width:60px">
+              <div style="width:{{ l.probability }}%;height:100%;background:{{ stage_colors.get(l.stage,'#8B1A1A') }};border-radius:3px"></div>
+            </div>
+            <span style="font-size:11px;font-weight:600;color:#4a5568">{{ l.probability }}%</span>
+          </div>
+          {% else %}—{% endif %}
+        </td>
+        <td>
+          <span style="font-size:11px;font-weight:600;color:{{ stage_colors.get(l.stage,'#8B1A1A') }};background:{{ stage_colors.get(l.stage,'#8B1A1A') }}15;padding:3px 8px;border-radius:5px">{{ l.stage }}</span>
+        </td>
+        <td style="font-size:11px;color:#718096">{{ l.assigned_to_employee.name if l.assigned_to_employee else '—' }}</td>
+        <td style="font-size:11px;color:#a0aec0">{{ l.updated_at | days_ago if l.updated_at else '—' }}</td>
+        <td>
+          {% if current_user.can('admin','director','bim_manager','project_manager') %}
+          <form method="POST" action="/crm/leads/{{ l.id }}/stage" class="d-inline">
+            <select name="stage" class="form-select form-select-sm d-inline w-auto" onchange="this.form.submit()" style="font-size:11px">
+              {% for s in ['New Lead','Qualified','Proposal Submitted','Negotiation','Won','Lost'] %}
+              <option {% if l.stage==s %}selected{% endif %}>{{ s }}</option>
+              {% endfor %}
+            </select>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="text-center py-5 text-muted">No leads found.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends "erp/base.html" %}
+{% block title %}User Management – BIM Bytes ERP{% endblock %}
+{% block page_title %}User Management{% endblock %}
+{% block page_sub %}Manage system access and roles{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-end mb-4">
+  <a href="/admin/users/new" class="btn btn-brand btn-sm"><i class="bi bi-person-plus me-1"></i>Create User</a>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-custom mb-0">
+      <thead><tr>
+        <th class="ps-3">User</th><th>Email</th><th>Role</th><th>Employee</th>
+        <th>Created</th><th>Last Login</th><th>Status</th><th>Actions</th>
+      </tr></thead>
+      <tbody>
+      {% set role_colors = {'admin':'#8B1A1A','director':'#553c9a','finance':'#276749','hr':'#2b6cb0','bim_manager':'#c05621','project_manager':'#4a5568','employee':'#718096'} %}
+      {% for u in users %}
+      <tr>
+        <td class="ps-3">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:32px;height:32px;border-radius:50%;background:{{ role_colors.get(u.role,'#8B1A1A') }};color:#fff;
+              font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              {{ u.name[0] if u.name else u.email[0]|upper }}
+            </div>
+            <span style="font-size:12px;font-weight:600;color:#2d3748">{{ u.name or '—' }}</span>
+          </div>
+        </td>
+        <td style="font-size:12px;color:#718096">{{ u.email }}</td>
+        <td>
+          <span style="font-size:11px;font-weight:700;color:{{ role_colors.get(u.role,'#718096') }};background:{{ role_colors.get(u.role,'#718096') }}15;padding:3px 8px;border-radius:5px">
+            {{ u.role | replace('_',' ') | title }}
+          </span>
+        </td>
+        <td style="font-size:11px;color:#4a5568">{{ u.employee.name if u.employee else '—' }}</td>
+        <td style="font-size:11px;color:#a0aec0">{{ u.created_at | fmt_date if u.created_at else '—' }}</td>
+        <td style="font-size:11px;color:#a0aec0">{{ u.last_login | days_ago if u.last_login else 'Never' }}</td>
+        <td>
+          <span style="font-size:11px;padding:2px 8px;border-radius:5px;font-weight:600;
+            {% if u.is_active %}background:#f0fff4;color:#276749{% else %}background:#f7f7f7;color:#a0aec0{% endif %}">
+            {{ 'Active' if u.is_active else 'Inactive' }}
+          </span>
+        </td>
+        <td>
+          <div class="d-flex gap-1">
+            {% if u.id != current_user.id %}
+            <form method="POST" action="/admin/users/{{ u.id }}/toggle" class="d-inline">
+              <button type="submit" class="btn btn-sm" title="{{ 'Deactivate' if u.is_active else 'Activate' }}"
+                style="font-size:11px;padding:2px 8px;{% if u.is_active %}background:#fff5f5;color:#c53030;border:1px solid #fed7d7{% else %}background:#f0fff4;color:#276749;border:1px solid #c6f6d5{% endif %}">
+                <i class="bi bi-{{ 'pause' if u.is_active else 'play' }}"></i>
+              </button>
+            </form>
+            <form method="POST" action="/admin/users/{{ u.id }}/reset" class="d-inline">
+              <button type="submit" class="btn btn-sm" title="Reset Password" style="font-size:11px;padding:2px 8px;background:#fffbeb;color:#92400e;border:1px solid #fde68a"
+                onclick="return confirm('Reset password to default?')">
+                <i class="bi bi-key"></i>
+              </button>
+            </form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Role permissions reference -->
+<div class="card mt-4">
+  <div class="card-header"><i class="bi bi-shield-lock text-danger me-1"></i>Role Permissions Reference</div>
+  <div class="card-body">
+    <div class="row g-2">
+      {% set role_perms = [
+        ('Admin','#8B1A1A','Full system access – all modules, user management, system config'),
+        ('Director','#553c9a','Executive view – all projects, financials, reports, CRM'),
+        ('Finance','#276749','Invoicing, payments, outstanding reports, finance approvals'),
+        ('HR Manager','#2b6cb0','Employee management, leaves, HR reports'),
+        ('BIM Manager','#c05621','BIM records, project oversight, team assignments, timesheets'),
+        ('Project Manager','#4a5568','Own projects, milestones, team, timesheets, expense approval'),
+        ('Employee','#718096','Own timesheets, expense submission, leave application'),
+      ] %}
+      {% for role, color, desc in role_perms %}
+      <div class="col-md-6">
+        <div style="display:flex;gap:10px;padding:8px;background:#f7fafc;border-radius:8px">
+          <div style="width:8px;border-radius:4px;background:{{ color }};flex-shrink:0"></div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:{{ color }}">{{ role }}</div>
+            <div style="font-size:10px;color:#718096;line-height:1.4">{{ desc }}</div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

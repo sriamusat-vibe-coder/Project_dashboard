@@ -1,0 +1,52 @@
+{% extends "erp/base.html" %}
+{% block title %}Apply Leave – BIM Bytes ERP{% endblock %}
+{% block page_title %}Apply for Leave{% endblock %}
+{% block page_sub %}Submit a leave request{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-xl-6">
+<div class="card">
+<div class="card-body">
+<form method="POST">
+<div class="row g-3">
+  <div class="col-md-12">
+    <label class="form-label">Employee *</label>
+    <select name="employee_id" class="form-select" required>
+      <option value="">— Select —</option>
+      {% for e in employees %}
+      <option value="{{ e.id }}" {% if current_user.employee and current_user.employee.id==e.id %}selected{% endif %}>{{ e.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-6">
+    <label class="form-label">Leave Type *</label>
+    <select name="leave_type" class="form-select" required>
+      {% for t in ['Annual Leave','Sick Leave','Casual Leave','Maternity Leave','Paternity Leave','Unpaid Leave','Compensatory Leave'] %}
+      <option>{{ t }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">From *</label>
+    <input name="start_date" type="date" class="form-control" required>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label">To *</label>
+    <input name="end_date" type="date" class="form-control" required>
+  </div>
+  <div class="col-12">
+    <label class="form-label">Reason *</label>
+    <textarea name="reason" class="form-control" rows="3" required placeholder="Brief reason for leave..."></textarea>
+  </div>
+</div>
+<div class="d-flex gap-2 mt-4">
+  <button type="submit" class="btn btn-brand"><i class="bi bi-send me-1"></i>Submit Request</button>
+  <a href="/hr/leaves" class="btn btn-outline-secondary">Cancel</a>
+</div>
+</form>
+</div>
+</div>
+</div>
+</div>
+{% endblock %}

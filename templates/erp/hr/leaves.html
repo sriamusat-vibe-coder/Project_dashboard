@@ -1,0 +1,66 @@
+{% extends "erp/base.html" %}
+{% block title %}Leave Management – BIM Bytes ERP{% endblock %}
+{% block page_title %}Leave Management{% endblock %}
+{% block page_sub %}Employee leave requests and approvals{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="d-flex gap-2">
+    {% for s in ['All','Pending','Approved','Rejected'] %}
+    <a href="?status={{ s if s!='All' else '' }}" class="btn btn-sm {% if (request.args.get('status',''))==(s if s!='All' else '') %}btn-brand{% else %}btn-outline-secondary{% endif %}" style="font-size:11px">{{ s }}</a>
+    {% endfor %}
+  </div>
+  <a href="/hr/leaves/apply" class="btn btn-brand btn-sm"><i class="bi bi-plus-lg me-1"></i>Apply Leave</a>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-custom mb-0">
+      <thead><tr>
+        <th class="ps-3">Employee</th><th>Leave Type</th><th>From</th><th>To</th>
+        <th>Days</th><th>Reason</th><th>Status</th><th></th>
+      </tr></thead>
+      <tbody>
+      {% for lv in leaves %}
+      {% set lsc={'Approved':'completed','Pending':'pending','Rejected':'overdue'} %}
+      <tr>
+        <td class="ps-3">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="width:28px;height:28px;border-radius:50%;background:#8B1A1A;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              {{ (lv.employee.name[0] if lv.employee else '?') }}
+            </div>
+            <div>
+              <div style="font-size:12px;font-weight:600">{{ lv.employee.name if lv.employee else '—' }}</div>
+              <div style="font-size:10px;color:#718096">{{ lv.employee.job_title if lv.employee else '' }}</div>
+            </div>
+          </div>
+        </td>
+        <td><span style="font-size:11px;background:#f7fafc;border:1px solid #e2e8f0;color:#4a5568;padding:2px 8px;border-radius:4px">{{ lv.leave_type }}</span></td>
+        <td style="font-size:12px">{{ lv.start_date | fmt_date }}</td>
+        <td style="font-size:12px">{{ lv.end_date | fmt_date }}</td>
+        <td style="font-size:13px;font-weight:700;color:#2d3748">{{ lv.days_requested }}</td>
+        <td style="font-size:11px;color:#718096;max-width:180px">{{ lv.reason[:60] if lv.reason else '—' }}</td>
+        <td><span class="badge-status badge-{{ lsc.get(lv.status,'pending') }}">{{ lv.status }}</span></td>
+        <td>
+          {% if lv.status == 'Pending' and current_user.can('admin','hr','director') %}
+          <div class="d-flex gap-1">
+            <form method="POST" action="/hr/leaves/{{ lv.id }}/action" class="d-inline">
+              <input type="hidden" name="action" value="approve">
+              <button type="submit" class="btn btn-sm" style="background:#f0fff4;color:#276749;border:1px solid #c6f6d5;font-size:11px;padding:2px 8px"><i class="bi bi-check2"></i> Approve</button>
+            </form>
+            <form method="POST" action="/hr/leaves/{{ lv.id }}/action" class="d-inline">
+              <input type="hidden" name="action" value="reject">
+              <button type="submit" class="btn btn-sm" style="background:#fff5f5;color:#c53030;border:1px solid #fed7d7;font-size:11px;padding:2px 8px"><i class="bi bi-x"></i> Reject</button>
+            </form>
+          </div>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="text-center py-5 text-muted">No leave requests found.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "erp/base.html" %}
+{% block title %}Log Hours – BIM Bytes ERP{% endblock %}
+{% block page_title %}Log Hours{% endblock %}
+{% block page_sub %}Submit timesheet entry{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-xl-7">
+<div class="card">
+<div class="card-body">
+<form method="POST">
+<div class="row g-3">
+  <div class="col-md-6">
+    <label class="form-label">Employee *</label>
+    <select name="employee_id" class="form-select" required>
+      <option value="">— Select —</option>
+      {% for e in employees %}
+      <option value="{{ e.id }}"
+        {% if request.args.get('employee_id')|int == e.id %}selected
+        {% elif current_user.employee and current_user.employee.id==e.id %}selected{% endif %}>
+        {{ e.name }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-6">
+    <label class="form-label">Work Date *</label>
+    <input name="work_date" type="date" class="form-control" required value="{{ today }}">
+  </div>
+  <div class="col-md-12">
+    <label class="form-label">Project *</label>
+    <select name="project_id" class="form-select" required>
+      <option value="">— Select Project —</option>
+      {% for p in projects %}
+      <option value="{{ p.id }}">{{ p.project_id }} – {{ p.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-4">
+    <label class="form-label">Regular Hours *</label>
+    <input name="hours" type="number" step="0.5" min="0.5" max="24" class="form-control" required placeholder="8">
+  </div>
+  <div class="col-md-4">
+    <label class="form-label">Overtime Hours</label>
+    <input name="overtime_hours" type="number" step="0.5" min="0" class="form-control" placeholder="0">
+  </div>
+  <div class="col-md-4">
+    <label class="form-label">Status</label>
+    <select name="status" class="form-select">
+      <option>Draft</option>
+      <option>Submitted</option>
+    </select>
+  </div>
+  <div class="col-12">
+    <label class="form-label">Task Description *</label>
+    <textarea name="task_description" class="form-control" rows="3" required placeholder="What did you work on? e.g. Revit modeling for Level 3 structural elements, clash detection review..."></textarea>
+  </div>
+</div>
+<div class="d-flex gap-2 mt-4">
+  <button type="submit" class="btn btn-brand"><i class="bi bi-check2 me-1"></i>Save Timesheet</button>
+  <a href="/timesheets" class="btn btn-outline-secondary">Cancel</a>
+</div>
+</form>
+</div>
+</div>
+</div>
+</div>
+{% endblock %}

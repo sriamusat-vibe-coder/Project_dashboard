@@ -1,0 +1,63 @@
+{% extends "erp/base.html" %}
+{% block title %}BIM Records – BIM Bytes ERP{% endblock %}
+{% block page_title %}BIM Records{% endblock %}
+{% block page_sub %}Model submissions, clash reports & quality records{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="d-flex gap-2 flex-wrap">
+    {% for t in ['All','Model Submission','Clash Detection Report','Quality Check','RFI','Issue Log','Approval'] %}
+    <a href="?type={{ t if t!='All' else '' }}" class="btn btn-sm {% if (request.args.get('type',''))==(t if t!='All' else '') %}btn-brand{% else %}btn-outline-secondary{% endif %}" style="font-size:11px">{{ t }}</a>
+    {% endfor %}
+  </div>
+  {% if current_user.can('admin','bim_manager','project_manager') %}
+  <a href="/bim/records/new" class="btn btn-brand btn-sm"><i class="bi bi-plus-lg me-1"></i>Add Record</a>
+  {% endif %}
+</div>
+
+<div class="row g-3">
+{% for r in records %}
+<div class="col-md-6 col-xl-4">
+  <div class="card h-100" style="transition:box-shadow .2s" onmouseenter="this.style.boxShadow='0 6px 20px rgba(0,0,0,.1)'" onmouseleave="this.style.boxShadow=''">
+    <div class="card-body">
+      <div class="d-flex justify-content-between mb-2">
+        <span style="font-size:10px;background:#fff5f5;color:#8B1A1A;border:1px solid #fecaca;padding:2px 8px;border-radius:4px;font-weight:600">{{ r.record_type }}</span>
+        {% if r.status %}
+        <span style="font-size:10px;padding:2px 8px;border-radius:4px;font-weight:600;
+          {% if r.status in ['Approved','Resolved','Closed'] %}background:#f0fff4;color:#276749{% elif r.status in ['Open','In Review'] %}background:#fffbeb;color:#92400e{% else %}background:#f7fafc;color:#4a5568{% endif %}">
+          {{ r.status }}
+        </span>
+        {% endif %}
+      </div>
+      <div style="font-weight:700;font-size:13px;color:#1a202c;margin-bottom:6px">{{ r.project.name if r.project else '—' }}</div>
+      {% if r.description %}
+      <div style="font-size:11px;color:#718096;line-height:1.5;margin-bottom:10px">{{ r.description[:120] }}{% if r.description|length > 120 %}…{% endif %}</div>
+      {% endif %}
+      <div class="row g-0" style="border-top:1px solid #f0f0f0;padding-top:8px;font-size:11px">
+        {% if r.lod_level %}
+        <div class="col-6"><span style="color:#a0aec0">LOD: </span><strong>{{ r.lod_level }}</strong></div>
+        {% endif %}
+        {% if r.clash_count is not none %}
+        <div class="col-6"><span style="color:#a0aec0">Clashes: </span><strong style="color:#c53030">{{ r.clash_count }}</strong></div>
+        {% endif %}
+        {% if r.model_version %}
+        <div class="col-6 mt-1"><span style="color:#a0aec0">Version: </span><strong>{{ r.model_version }}</strong></div>
+        {% endif %}
+        {% if r.submitted_by_employee %}
+        <div class="col-6 mt-1"><span style="color:#a0aec0">By: </span><strong>{{ r.submitted_by_employee.name }}</strong></div>
+        {% endif %}
+      </div>
+      {% if r.record_date %}
+      <div style="font-size:10px;color:#a0aec0;margin-top:8px"><i class="bi bi-calendar3 me-1"></i>{{ r.record_date | fmt_date }}</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="col-12"><div class="card"><div class="card-body text-center py-5">
+  <i class="bi bi-file-earmark-check" style="font-size:48px;color:#e2e8f0"></i>
+  <p class="mt-3 text-muted">No BIM records yet. <a href="/bim/records/new">Add first record</a></p>
+</div></div></div>
+{% endfor %}
+</div>
+{% endblock %}

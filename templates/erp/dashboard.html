@@ -1,0 +1,264 @@
+{% extends "erp/base.html" %}
+{% block title %}Dashboard – BIM Bytes ERP{% endblock %}
+{% block page_title %}Executive Dashboard{% endblock %}
+{% block page_sub %}Real-time overview · {{ now.strftime('%d %b %Y') if now else '' }}{% endblock %}
+
+{% block content %}
+<!-- KPI Row 1 -->
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-dark">
+    <div class="kpi-icon"><i class="bi bi-folder2-open"></i></div>
+    <div class="kpi-val">{{ total_projects }}</div>
+    <div class="kpi-label">Total Projects</div>
+    <div class="kpi-sub">{{ active_projects }} active · {{ on_hold_projects }} on hold</div>
+  </div></div>
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-red">
+    <div class="kpi-icon"><i class="bi bi-currency-rupee"></i></div>
+    <div class="kpi-val">{{ inr(total_contract) }}</div>
+    <div class="kpi-label">Total Contract Value</div>
+    <div class="kpi-sub">{{ total_projects }} contracts</div>
+  </div></div>
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-green">
+    <div class="kpi-icon"><i class="bi bi-check2-circle"></i></div>
+    <div class="kpi-val">{{ inr(total_received) }}</div>
+    <div class="kpi-label">Revenue Collected</div>
+    <div class="kpi-sub">{{ inr(total_invoiced) }} invoiced</div>
+  </div></div>
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-orange">
+    <div class="kpi-icon"><i class="bi bi-hourglass-split"></i></div>
+    <div class="kpi-val">{{ inr(total_outstanding) }}</div>
+    <div class="kpi-label">Outstanding</div>
+    <div class="kpi-sub">{{ overdue_count }} overdue invoices</div>
+  </div></div>
+</div>
+
+<!-- KPI Row 2 -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-blue">
+    <div class="kpi-icon"><i class="bi bi-graph-up-arrow"></i></div>
+    <div class="kpi-val">{{ inr(total_profit) }}</div>
+    <div class="kpi-label">Net Profit</div>
+    <div class="kpi-sub">After approved expenses</div>
+  </div></div>
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-teal">
+    <div class="kpi-icon"><i class="bi bi-wallet2"></i></div>
+    <div class="kpi-val">{{ inr(total_expenses) }}</div>
+    <div class="kpi-label">Total Expenses</div>
+    <div class="kpi-sub">{{ pending_expenses }} pending approval</div>
+  </div></div>
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-purple">
+    <div class="kpi-icon"><i class="bi bi-person-check"></i></div>
+    <div class="kpi-val">{{ employee_count }}</div>
+    <div class="kpi-label">Active Employees</div>
+    <div class="kpi-sub">{{ pending_leaves }} leave requests</div>
+  </div></div>
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-rose">
+    <div class="kpi-icon"><i class="bi bi-building"></i></div>
+    <div class="kpi-val">{{ completed_projects }}</div>
+    <div class="kpi-label">Completed Projects</div>
+    <div class="kpi-sub">{{ active_projects }} in progress</div>
+  </div></div>
+</div>
+
+<!-- Charts Row 1 -->
+<div class="row g-3 mb-3">
+  <div class="col-md-8">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-bar-chart-line text-danger me-1"></i>Monthly Revenue vs Expenses</div>
+      <div class="card-body"><div class="chart-box"><canvas id="chartMonthly"></canvas></div></div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-pie-chart text-danger me-1"></i>Invoice Collection Status</div>
+      <div class="card-body"><div class="chart-box-sm"><canvas id="chartCollection"></canvas></div>
+        <div id="collectionLegend" class="mt-2 d-flex justify-content-center gap-3"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row 2 -->
+<div class="row g-3 mb-3">
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-geo-alt text-danger me-1"></i>Country-wise Revenue</div>
+      <div class="card-body"><div class="chart-box"><canvas id="chartCountry"></canvas></div></div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-activity text-danger me-1"></i>Monthly Cash Flow</div>
+      <div class="card-body"><div class="chart-box"><canvas id="chartCash"></canvas></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Project Profitability -->
+<div class="row g-3 mb-3">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-graph-up text-danger me-1"></i>Project-wise Profitability</div>
+      <div class="card-body"><div class="chart-box-lg"><canvas id="chartProfit"></canvas></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Lead Pipeline + Recent -->
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-header"><i class="bi bi-funnel text-danger me-1"></i>Lead Pipeline</div>
+      <div class="card-body p-0">
+        {% set stage_colors = {'New Lead':'#718096','Qualified':'#2b6cb0','Proposal Submitted':'#553c9a','Negotiation':'#c05621','Won':'#276749','Lost':'#c53030'} %}
+        {% set total_val = leads_by_stage.values()|sum %}
+        {% for stage, count in leads_by_stage.items() %}
+        <div class="d-flex align-items-center px-3 py-2 border-bottom" style="gap:10px">
+          <div style="width:8px;height:8px;border-radius:50%;background:{{ stage_colors.get(stage,'#8B1A1A') }};flex-shrink:0"></div>
+          <span style="font-size:12px;color:#2d3748;flex:1">{{ stage }}</span>
+          <span style="font-size:12px;font-weight:700;color:{{ stage_colors.get(stage,'#8B1A1A') }}">{{ count }}</span>
+        </div>
+        {% endfor %}
+        <div class="px-3 py-2 text-end">
+          <a href="/crm/leads" class="btn btn-sm btn-brand-outline" style="font-size:11px">View Pipeline →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-8">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-folder2-open text-danger me-1"></i>Recent Projects</span>
+        <a href="/projects" class="btn btn-sm btn-brand-outline" style="font-size:11px">View All</a>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-custom mb-0">
+          <thead><tr>
+            <th class="ps-3">ID</th><th>Project</th><th>Client</th><th>Contract</th><th>Status</th>
+          </tr></thead>
+          <tbody>
+          {% for p in recent_projects %}
+          <tr onclick="location.href='/projects/{{ p.id }}'" style="cursor:pointer">
+            <td class="ps-3"><code style="font-size:11px">{{ p.project_id }}</code></td>
+            <td><span style="font-weight:600;font-size:12px">{{ p.name }}</span></td>
+            <td style="font-size:12px;color:#718096">{{ p.client.name if p.client else '-' }}</td>
+            <td style="font-size:12px">{{ inr(p.contract_value) }}</td>
+            <td>
+              {% set sc = {'Ongoing':'ongoing','Completed':'completed','On Hold':'hold','Awarded':'awarded','Lead':'lead'} %}
+              <span class="badge-status badge-{{ sc.get(p.status,'lead') }}">{{ p.status }}</span>
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Invoices -->
+<div class="row g-3">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-receipt text-danger me-1"></i>Recent Invoices</span>
+        <a href="/finance/invoices" class="btn btn-sm btn-brand-outline" style="font-size:11px">View All</a>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-custom mb-0">
+          <thead><tr>
+            <th class="ps-3">Invoice #</th><th>Project</th><th>Client</th>
+            <th>Date</th><th>Amount</th><th>Outstanding</th><th>Status</th>
+          </tr></thead>
+          <tbody>
+          {% for inv in recent_invoices %}
+          <tr onclick="location.href='/finance/invoices/{{ inv.id }}'" style="cursor:pointer">
+            <td class="ps-3"><code style="font-size:11px">{{ inv.invoice_number }}</code></td>
+            <td style="font-size:12px">{{ inv.project.name[:28] if inv.project else '-' }}</td>
+            <td style="font-size:12px;color:#718096">{{ inv.client.name if inv.client else '-' }}</td>
+            <td style="font-size:12px">{{ inv.invoice_date | fmt_date }}</td>
+            <td style="font-size:12px;font-weight:600">{{ inr(inv.total_amount) }}</td>
+            <td style="font-size:12px;color:#c53030">{{ inr(inv.outstanding) if inv.outstanding > 0 else '—' }}</td>
+            <td>
+              {% set sc2 = {'Paid':'paid','Pending':'pending','Overdue':'overdue','Partially Paid':'partial'} %}
+              <span class="badge-status badge-{{ sc2.get(inv.status,'pending') }}">
+                {{ inv.status }}{% if inv.is_overdue %} ⚠{% endif %}
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const BRAND='#8B1A1A', DARK='#1C1C1C';
+const gridColor='rgba(0,0,0,.05)';
+Chart.defaults.font.family="'Inter',sans-serif";
+Chart.defaults.font.size=11;
+
+fetch('/api/dashboard-data').then(r=>r.json()).then(d=>{
+  // Monthly bar chart
+  new Chart(document.getElementById('chartMonthly'),{
+    type:'bar',
+    data:{labels:d.months,datasets:[
+      {label:'Revenue',data:d.revenue,backgroundColor:'rgba(139,26,26,.8)',borderRadius:4},
+      {label:'Expenses',data:d.expenses,backgroundColor:'rgba(28,28,28,.6)',borderRadius:4},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:10}}},
+      scales:{x:{grid:{display:false}},y:{grid:{color:gridColor},ticks:{callback:v=>v>=1e5?'₹'+(v/1e5).toFixed(0)+'L':'₹'+v}}}}
+  });
+  // Collection doughnut
+  const cl=d.invoice_status;
+  new Chart(document.getElementById('chartCollection'),{
+    type:'doughnut',
+    data:{labels:['Paid','Pending','Partial'],
+      datasets:[{data:[cl.paid,cl.pending,cl.partial],
+        backgroundColor:['#276749','#c05621','#553c9a'],borderWidth:0,holeRadius:.6}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',
+      plugins:{legend:{display:false}}}
+  });
+  // Country bar
+  const cr=d.country_revenue;
+  new Chart(document.getElementById('chartCountry'),{
+    type:'bar',
+    data:{labels:cr.map(x=>x.country),datasets:[{
+      label:'Revenue',data:cr.map(x=>x.revenue),
+      backgroundColor:['rgba(139,26,26,.85)','rgba(28,28,28,.7)','rgba(43,107,176,.8)','rgba(39,103,73,.8)','rgba(192,86,33,.8)'],
+      borderRadius:6}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:gridColor},ticks:{callback:v=>'₹'+(v/1e5).toFixed(0)+'L'}},y:{grid:{display:false}}}}
+  });
+  // Cash flow line
+  new Chart(document.getElementById('chartCash'),{
+    type:'line',
+    data:{labels:d.months,datasets:[{
+      label:'Net Cash Flow',data:d.net,
+      borderColor:BRAND,backgroundColor:'rgba(139,26,26,.08)',fill:true,
+      tension:.4,pointBackgroundColor:BRAND,pointRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false}},y:{grid:{color:gridColor},
+        ticks:{callback:v=>v>=0?'₹'+(v/1e5).toFixed(1)+'L':'-₹'+(Math.abs(v)/1e5).toFixed(1)+'L'}}}}
+  });
+  // Profitability grouped bar
+  const pp=d.project_profitability;
+  new Chart(document.getElementById('chartProfit'),{
+    type:'bar',
+    data:{labels:pp.map(x=>x.name),datasets:[
+      {label:'Revenue',data:pp.map(x=>x.revenue),backgroundColor:'rgba(43,107,176,.8)',borderRadius:3},
+      {label:'Expenses',data:pp.map(x=>x.expense),backgroundColor:'rgba(192,86,33,.8)',borderRadius:3},
+      {label:'Profit',data:pp.map(x=>x.profit),backgroundColor:'rgba(39,103,73,.8)',borderRadius:3},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{boxWidth:10}}},
+      scales:{x:{grid:{display:false}},y:{grid:{color:gridColor},
+        ticks:{callback:v=>'₹'+(v/1e5).toFixed(0)+'L'}}}}
+  });
+});
+</script>
+{% endblock %}

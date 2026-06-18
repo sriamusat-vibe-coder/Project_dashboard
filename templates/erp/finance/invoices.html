@@ -1,0 +1,71 @@
+{% extends "erp/base.html" %}
+{% block title %}Invoices – BIM Bytes ERP{% endblock %}
+{% block page_title %}Invoices{% endblock %}
+{% block page_sub %}Billing and payment tracking{% endblock %}
+
+{% block content %}
+<!-- KPIs -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-dark" style="padding:16px">
+    <div class="kpi-val" style="font-size:20px">{{ invoices|length }}</div>
+    <div class="kpi-label">Total Invoices</div>
+  </div></div>
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-green" style="padding:16px">
+    <div class="kpi-val" style="font-size:20px">{{ invoices | selectattr('status','equalto','Paid') | list | length }}</div>
+    <div class="kpi-label">Paid</div>
+  </div></div>
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-orange" style="padding:16px">
+    <div class="kpi-val" style="font-size:20px">{{ invoices | selectattr('status','in',['Pending','Partially Paid']) | list | length }}</div>
+    <div class="kpi-label">Pending / Partial</div>
+  </div></div>
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-red" style="padding:16px">
+    <div class="kpi-val" style="font-size:20px">{{ invoices | selectattr('is_overdue') | list | length }}</div>
+    <div class="kpi-label">Overdue</div>
+  </div></div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div class="d-flex gap-2 flex-wrap">
+    {% for s in ['All','Paid','Pending','Partially Paid','Overdue'] %}
+    <a href="?status={{ s if s!='All' else '' }}" class="btn btn-sm {% if (request.args.get('status',''))==(s if s!='All' else '') %}btn-brand{% else %}btn-outline-secondary{% endif %}" style="font-size:11px">{{ s }}</a>
+    {% endfor %}
+  </div>
+  {% if current_user.can('admin','director','finance') %}
+  <div class="d-flex gap-2">
+    <a href="/finance/outstanding" class="btn btn-outline-danger btn-sm"><i class="bi bi-exclamation-triangle me-1"></i>Outstanding</a>
+    <a href="/finance/invoices/new" class="btn btn-brand btn-sm"><i class="bi bi-plus-lg me-1"></i>New Invoice</a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-custom mb-0">
+      <thead><tr>
+        <th class="ps-3">Invoice #</th><th>Project</th><th>Client</th>
+        <th>Date</th><th>Due Date</th><th>Amount</th><th>Paid</th><th>Outstanding</th><th>Status</th>
+      </tr></thead>
+      <tbody>
+      {% for inv in invoices %}
+      <tr onclick="location.href='/finance/invoices/{{ inv.id }}'" style="cursor:pointer" {% if inv.is_overdue %}style="background:#fff5f5"{% endif %}>
+        <td class="ps-3"><code style="font-size:11px">{{ inv.invoice_number }}</code></td>
+        <td style="font-size:11px;max-width:150px">{{ inv.project.name[:28] if inv.project else '—' }}</td>
+        <td style="font-size:11px;color:#718096">{{ inv.client.name if inv.client else '—' }}</td>
+        <td style="font-size:11px">{{ inv.invoice_date | fmt_date }}</td>
+        <td style="font-size:11px{% if inv.is_overdue %};color:#c53030;font-weight:600{% endif %}">{{ inv.due_date | fmt_date }}</td>
+        <td style="font-size:12px;font-weight:700">{{ inr(inv.total_amount) }}</td>
+        <td style="font-size:12px;color:#276749">{{ inr(inv.amount_paid) if inv.amount_paid else '—' }}</td>
+        <td style="font-size:12px;color:#c53030;font-weight:600">{{ inr(inv.outstanding) if inv.outstanding > 0 else '—' }}</td>
+        <td>
+          {% set sc={'Paid':'paid','Pending':'pending','Overdue':'overdue','Partially Paid':'partial'} %}
+          <span class="badge-status badge-{{ sc.get(inv.status,'pending') }}">{{ inv.status }}{% if inv.is_overdue %} ⚠{% endif %}</span>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="9" class="text-center py-5 text-muted">No invoices found.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}BIM Bytes Solutions ERP{% endblock %}</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --brand-red:#8B1A1A; --brand-dark:#1C1C1C; --sidebar-bg:#141414;
+  --sidebar-w:260px; --topbar-h:64px;
+  --text-muted-light:#a0aec0; --card-shadow:0 2px 16px rgba(0,0,0,.07);
+}
+*{box-sizing:border-box;font-family:'Inter',sans-serif}
+body{background:#F0F2F5;margin:0;overflow-x:hidden}
+
+/* ── Sidebar ── */
+.sidebar{position:fixed;top:0;left:0;height:100vh;width:var(--sidebar-w);
+  background:var(--sidebar-bg);display:flex;flex-direction:column;
+  z-index:1000;overflow-y:auto;overflow-x:hidden;transition:width .3s}
+.sidebar-logo{padding:20px 20px 16px;border-bottom:1px solid #2a2a2a;
+  display:flex;align-items:center;gap:12px;text-decoration:none}
+.sidebar-logo img{width:42px;height:42px;object-fit:contain}
+.sidebar-logo-text{line-height:1.1}
+.sidebar-logo-text .brand-name{font-size:13px;font-weight:700;color:#fff;
+  letter-spacing:.3px;text-transform:uppercase}
+.sidebar-logo-text .brand-tag{font-size:9px;color:#8B1A1A;font-weight:600;
+  text-transform:uppercase;letter-spacing:.5px}
+
+.sidebar-user{padding:14px 20px;border-bottom:1px solid #2a2a2a;
+  display:flex;align-items:center;gap:10px}
+.sidebar-avatar{width:36px;height:36px;border-radius:50%;
+  background:var(--brand-red);display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
+.sidebar-user-name{font-size:12px;font-weight:600;color:#e2e8f0;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidebar-user-role{font-size:10px;color:#8B1A1A;font-weight:500;text-transform:uppercase;letter-spacing:.3px}
+
+.sidebar-section{padding:8px 20px 4px;font-size:10px;font-weight:600;
+  color:#4a5568;text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+
+.sidebar-nav{list-style:none;margin:0;padding:4px 0}
+.sidebar-nav li a{display:flex;align-items:center;gap:10px;padding:9px 20px;
+  color:#a0aec0;text-decoration:none;font-size:13px;font-weight:500;
+  border-left:3px solid transparent;transition:all .2s}
+.sidebar-nav li a:hover{color:#fff;background:rgba(139,26,26,.15);border-left-color:#8B1A1A}
+.sidebar-nav li a.active{color:#fff;background:rgba(139,26,26,.25);border-left-color:#8B1A1A}
+.sidebar-nav li a .bi{font-size:15px;width:18px;text-align:center}
+
+/* ── Main layout ── */
+.main-wrap{margin-left:var(--sidebar-w);min-height:100vh;display:flex;flex-direction:column;transition:margin .3s}
+
+/* ── Topbar ── */
+.topbar{height:var(--topbar-h);background:#fff;border-bottom:1px solid #e2e8f0;
+  display:flex;align-items:center;padding:0 24px;gap:16px;
+  position:sticky;top:0;z-index:500;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.topbar-title{font-size:17px;font-weight:700;color:#1a202c;flex:1}
+.topbar-title small{font-size:12px;font-weight:400;color:#718096;margin-left:8px}
+
+/* ── Page content ── */
+.page-content{padding:24px;flex:1}
+.page-header{margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.page-header h1{font-size:22px;font-weight:700;color:#1a202c;margin:0}
+.page-header .breadcrumb{margin:0;font-size:12px}
+
+/* ── Cards ── */
+.card{border:none;border-radius:12px;box-shadow:var(--card-shadow);background:#fff}
+.card-header{background:transparent;border-bottom:1px solid #f0f0f0;padding:16px 20px;
+  font-size:14px;font-weight:600;color:#2d3748;display:flex;align-items:center;gap:8px}
+
+/* ── KPI Cards ── */
+.kpi-card{border:none;border-radius:14px;padding:20px;color:#fff;position:relative;overflow:hidden;
+  box-shadow:0 4px 20px rgba(0,0,0,.12);transition:transform .2s}
+.kpi-card:hover{transform:translateY(-2px)}
+.kpi-card::after{content:'';position:absolute;bottom:-20px;right:-20px;
+  width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.1)}
+.kpi-card .kpi-icon{font-size:28px;opacity:.9;margin-bottom:8px}
+.kpi-card .kpi-val{font-size:22px;font-weight:700;line-height:1.1}
+.kpi-card .kpi-label{font-size:11px;font-weight:500;opacity:.85;margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+.kpi-card .kpi-sub{font-size:11px;opacity:.75;margin-top:4px}
+.kpi-red   {background:linear-gradient(135deg,#8B1A1A,#c53030)}
+.kpi-dark  {background:linear-gradient(135deg,#2d3748,#4a5568)}
+.kpi-green {background:linear-gradient(135deg,#276749,#38a169)}
+.kpi-orange{background:linear-gradient(135deg,#c05621,#ed8936)}
+.kpi-blue  {background:linear-gradient(135deg,#2b6cb0,#4299e1)}
+.kpi-teal  {background:linear-gradient(135deg,#285e61,#319795)}
+.kpi-purple{background:linear-gradient(135deg,#553c9a,#805ad5)}
+.kpi-rose  {background:linear-gradient(135deg,#97266d,#d53f8c)}
+
+/* ── Status badges ── */
+.badge-status{font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px}
+.badge-ongoing{background:#ebf8ff;color:#2b6cb0}
+.badge-completed{background:#f0fff4;color:#276749}
+.badge-hold{background:#fffaf0;color:#c05621}
+.badge-awarded{background:#faf5ff;color:#553c9a}
+.badge-lead{background:#e2e8f0;color:#4a5568}
+.badge-paid{background:#f0fff4;color:#276749}
+.badge-pending{background:#fffaf0;color:#c05621}
+.badge-overdue{background:#fff5f5;color:#c53030}
+.badge-partial{background:#e9d8fd;color:#553c9a}
+.badge-approved{background:#f0fff4;color:#276749}
+.badge-rejected{background:#fff5f5;color:#c53030}
+.badge-draft{background:#e2e8f0;color:#4a5568}
+.badge-submitted{background:#ebf8ff;color:#2b6cb0}
+.badge-active{background:#f0fff4;color:#276749}
+.badge-inactive{background:#e2e8f0;color:#718096}
+
+/* ── Tables ── */
+.table-custom{font-size:13px}
+.table-custom th{font-weight:600;font-size:11px;text-transform:uppercase;
+  letter-spacing:.5px;color:#718096;background:#f7fafc;border:none}
+.table-custom td{vertical-align:middle;border-color:#f0f0f0;color:#2d3748}
+.table-custom tbody tr:hover{background:#f7fafc}
+
+/* ── Btn brand ── */
+.btn-brand{background:var(--brand-red);color:#fff;border:none;font-weight:600;font-size:13px}
+.btn-brand:hover{background:#a01f1f;color:#fff}
+.btn-brand-outline{border:1.5px solid var(--brand-red);color:var(--brand-red);
+  background:transparent;font-weight:600;font-size:13px}
+.btn-brand-outline:hover{background:var(--brand-red);color:#fff}
+
+/* ── Flash msgs ── */
+.flash-bar{position:sticky;top:var(--topbar-h);z-index:490;padding:0}
+.alert{border:none;border-radius:0;margin:0;font-size:13px;border-left:4px solid transparent}
+.alert-success{border-left-color:#48bb78;background:#f0fff4}
+.alert-danger{border-left-color:#fc8181;background:#fff5f5}
+.alert-warning{border-left-color:#f6ad55;background:#fffaf0}
+.alert-info{border-left-color:#63b3ed;background:#ebf8ff}
+
+/* ── Chart containers ── */
+.chart-box{position:relative;height:280px}
+.chart-box-sm{position:relative;height:220px}
+.chart-box-lg{position:relative;height:320px}
+
+/* ── Progress bars ── */
+.progress{height:6px;border-radius:4px}
+.progress-bar-brand{background:var(--brand-red)}
+
+/* ── Notification dropdown ── */
+.notif-dropdown{width:340px;max-height:400px;overflow-y:auto}
+.notif-item{padding:10px 14px;border-bottom:1px solid #f0f0f0;cursor:pointer;transition:background .15s}
+.notif-item:hover{background:#f7fafc}
+.notif-item.unread{background:#fff9f9;border-left:3px solid #8B1A1A}
+.notif-title{font-size:12px;font-weight:600;color:#2d3748;margin-bottom:2px}
+.notif-msg{font-size:11px;color:#718096}
+.notif-time{font-size:10px;color:#a0aec0;margin-top:2px}
+
+/* ── Forms ── */
+.form-label{font-size:12px;font-weight:600;color:#4a5568;margin-bottom:4px}
+.form-control,.form-select{font-size:13px;border-radius:8px;border:1.5px solid #e2e8f0}
+.form-control:focus,.form-select:focus{border-color:#8B1A1A;box-shadow:0 0 0 3px rgba(139,26,26,.1)}
+
+/* ── Misc ── */
+.avatar-sm{width:32px;height:32px;border-radius:50%;background:#8B1A1A;
+  display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700}
+.pipeline-card{border-left:4px solid;border-radius:10px;padding:14px;margin-bottom:10px;background:#fff}
+.section-divider{height:1px;background:#f0f0f0;margin:20px 0}
+@media(max-width:768px){.sidebar{width:0;overflow:hidden}.main-wrap{margin-left:0}}
+</style>
+{% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <a href="/" class="sidebar-logo">
+    <img src="/static/img/logo.png" alt="BIM Bytes" onerror="this.style.display='none';document.getElementById('logo-fallback').style.display='flex'">
+    <div id="logo-fallback" style="display:none;width:42px;height:42px;background:#8B1A1A;border-radius:8px;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:16px">BB</div>
+    <div class="sidebar-logo-text">
+      <div class="brand-name">BIM Bytes</div>
+      <div class="brand-tag">Solutions</div>
+    </div>
+  </a>
+
+  <div class="sidebar-user">
+    <div class="sidebar-avatar">{{ current_user.name[0] }}</div>
+    <div>
+      <div class="sidebar-user-name">{{ current_user.name }}</div>
+      <div class="sidebar-user-role">{{ current_user.role_label }}</div>
+    </div>
+  </div>
+
+  <ul class="sidebar-nav mt-2">
+    <li><a href="/" class="{{ 'active' if request.endpoint=='dashboard' }}">
+        <i class="bi bi-grid-fill"></i> Dashboard</a></li>
+  </ul>
+
+  <div class="sidebar-section">Projects & CRM</div>
+  <ul class="sidebar-nav">
+    <li><a href="/projects" class="{{ 'active' if 'project' in request.endpoint }}">
+        <i class="bi bi-folder2-open"></i> Projects</a></li>
+    {% if current_user.can('admin','director','project_manager','bim_manager','finance') %}
+    <li><a href="/crm/clients" class="{{ 'active' if request.endpoint=='clients_list' }}">
+        <i class="bi bi-people"></i> Clients</a></li>
+    <li><a href="/crm/leads" class="{{ 'active' if request.endpoint in ('leads_list','leads_new') }}">
+        <i class="bi bi-funnel"></i> Leads & Pipeline</a></li>
+    {% endif %}
+  </ul>
+
+  {% if current_user.can('admin','director','finance') %}
+  <div class="sidebar-section">Finance</div>
+  <ul class="sidebar-nav">
+    <li><a href="/finance/invoices" class="{{ 'active' if 'invoice' in request.endpoint }}">
+        <i class="bi bi-receipt"></i> Invoices</a></li>
+    <li><a href="/finance/outstanding" class="{{ 'active' if request.endpoint=='outstanding' }}">
+        <i class="bi bi-exclamation-circle"></i> Outstanding</a></li>
+  </ul>
+  {% endif %}
+
+  {% if current_user.can('admin','director','hr') %}
+  <div class="sidebar-section">Human Resources</div>
+  <ul class="sidebar-nav">
+    <li><a href="/hr/employees" class="{{ 'active' if 'employee' in request.endpoint }}">
+        <i class="bi bi-person-badge"></i> Employees</a></li>
+    <li><a href="/hr/leaves" class="{{ 'active' if 'leave' in request.endpoint }}">
+        <i class="bi bi-calendar2-x"></i> Leave Management</a></li>
+  </ul>
+  {% endif %}
+
+  <div class="sidebar-section">Operations</div>
+  <ul class="sidebar-nav">
+    <li><a href="/expenses" class="{{ 'active' if 'expense' in request.endpoint }}">
+        <i class="bi bi-wallet2"></i> Expenses</a></li>
+    <li><a href="/timesheets" class="{{ 'active' if 'timesheet' in request.endpoint }}">
+        <i class="bi bi-clock-history"></i> Timesheets</a></li>
+    {% if current_user.can('admin','bim_manager','project_manager','director') %}
+    <li><a href="/bim/records" class="{{ 'active' if 'bim' in request.endpoint }}">
+        <i class="bi bi-building"></i> BIM Operations</a></li>
+    {% endif %}
+  </ul>
+
+  {% if current_user.can('admin','director','finance','hr') %}
+  <div class="sidebar-section">Analytics</div>
+  <ul class="sidebar-nav">
+    <li><a href="/reports" class="{{ 'active' if request.endpoint=='reports_index' }}">
+        <i class="bi bi-bar-chart-line"></i> Reports</a></li>
+  </ul>
+  {% endif %}
+
+  {% if current_user.role == 'admin' %}
+  <div class="sidebar-section">Administration</div>
+  <ul class="sidebar-nav">
+    <li><a href="/admin/users" class="{{ 'active' if 'admin' in request.endpoint }}">
+        <i class="bi bi-shield-lock"></i> User Management</a></li>
+  </ul>
+  {% endif %}
+
+  <ul class="sidebar-nav mt-auto mb-2" style="margin-top:auto!important">
+    <li><a href="/logout"><i class="bi bi-box-arrow-left"></i> Logout</a></li>
+  </ul>
+</aside>
+
+<!-- Main -->
+<div class="main-wrap">
+  <!-- Topbar -->
+  <nav class="topbar">
+    <div class="topbar-title">
+      {% block page_title %}Dashboard{% endblock %}
+      <small>{% block page_sub %}{% endblock %}</small>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+      <!-- Notifications -->
+      <div class="dropdown">
+        <button class="btn btn-sm btn-light position-relative" data-bs-toggle="dropdown">
+          <i class="bi bi-bell"></i>
+          {% if unread_count > 0 %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:9px">
+            {{ unread_count }}
+          </span>
+          {% endif %}
+        </button>
+        <div class="dropdown-menu dropdown-menu-end p-0 notif-dropdown shadow-lg">
+          <div class="px-3 py-2 border-bottom d-flex justify-content-between align-items-center">
+            <span class="fw-600" style="font-size:13px">Notifications</span>
+            <button class="btn btn-link btn-sm p-0 text-muted" onclick="markRead()" style="font-size:11px">Mark all read</button>
+          </div>
+          {% for n in recent_notifs %}
+          <div class="notif-item {{ 'unread' if not n.is_read }}">
+            <div class="notif-title">{{ n.title }}</div>
+            <div class="notif-msg">{{ n.message }}</div>
+            <div class="notif-time">{{ n.created_at | days_ago }}</div>
+          </div>
+          {% else %}
+          <div class="text-center py-4 text-muted" style="font-size:12px">No notifications</div>
+          {% endfor %}
+        </div>
+      </div>
+      <!-- User menu -->
+      <div class="dropdown">
+        <button class="btn btn-sm d-flex align-items-center gap-2" data-bs-toggle="dropdown"
+                style="background:#f7fafc;border:1px solid #e2e8f0;border-radius:8px;padding:6px 12px">
+          <div style="width:26px;height:26px;border-radius:50%;background:#8B1A1A;display:flex;
+                      align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700">
+            {{ current_user.name[0] }}</div>
+          <span style="font-size:13px;font-weight:600;color:#2d3748">{{ current_user.name.split()[0] }}</span>
+          <i class="bi bi-chevron-down" style="font-size:10px"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow">
+          {% if current_user.employee_id %}
+          <li><a class="dropdown-item" href="/hr/employees/{{ current_user.employee_id }}">
+              <i class="bi bi-person me-2"></i>My Profile</a></li>
+          <li><hr class="dropdown-divider"></li>
+          {% endif %}
+          <li><a class="dropdown-item text-danger" href="/logout">
+              <i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Flash messages -->
+  <div class="flash-bar">
+    {% with msgs = get_flashed_messages(with_categories=True) %}
+    {% for cat, msg in msgs %}
+    <div class="alert alert-{{ cat }} alert-dismissible mb-0" role="alert">
+      <i class="bi bi-{{ 'check-circle' if cat=='success' else 'exclamation-triangle' if cat=='warning' else 'x-circle' if cat=='danger' else 'info-circle' }} me-2"></i>
+      {{ msg }}
+      <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endwith %}
+  </div>
+
+  <!-- Content -->
+  <div class="page-content">
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+function markRead(){
+  fetch('/notifications/read',{method:'POST',headers:{'Content-Type':'application/json'}})
+    .then(()=>location.reload());
+}
+// Auto-dismiss alerts after 5s
+document.querySelectorAll('.alert').forEach(el=>{
+  setTimeout(()=>{ const b=bootstrap.Alert.getOrCreateInstance(el); b && b.close(); },5000);
+});
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>
