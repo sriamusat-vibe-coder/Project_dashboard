@@ -1061,9 +1061,17 @@ def forbidden(e): return render_template('erp/errors/403.html'), 403
 @app.errorhandler(404)
 def not_found(e):  return render_template('erp/errors/404.html'), 404
 
+# ── Startup: create tables + auto-seed if empty ───────────────────────────────
+with app.app_context():
+    db.create_all()
+    try:
+        from erp_seed import seed as _auto_seed
+        _auto_seed()
+    except Exception as _e:
+        print(f'Seed skipped: {_e}')
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        print('  DB ready.')
-    print('BIM Bytes Solutions ERP  ->  http://localhost:5001')
-    app.run(debug=True, port=5001, host='0.0.0.0')
+    port = int(os.environ.get('PORT', 5001))
+    debug = os.environ.get('FLASK_ENV') != 'production'
+    print(f'BIM Bytes Solutions ERP  ->  http://localhost:{port}')
+    app.run(debug=debug, port=port, host='0.0.0.0')

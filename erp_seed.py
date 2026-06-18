@@ -8,11 +8,9 @@ from erp_app import (User, Employee, Client, Lead, Project, ProjectTeam,
 from datetime import date, timedelta, datetime
 
 def seed():
-    with app.app_context():
-        db.create_all()
-        if User.query.count() > 0:
-            print("Database already seeded. Delete bim_erp.db to re-seed.")
-            return
+    """Seed demo data. Safe to call from within an existing app context or standalone."""
+    if User.query.count() > 0:
+        return  # already seeded
 
         # ── Employees ──────────────────────────────────────────────────────────
         emps = [
@@ -398,4 +396,6 @@ def seed():
             print(f"  {email:<32} / {pw:<14} => {role}")
 
 if __name__ == '__main__':
-    seed()
+    with app.app_context():
+        db.create_all()
+        seed()
